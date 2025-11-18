@@ -1,0 +1,45 @@
+return {
+    'Decodetalkers/csharpls-extended-lsp.nvim',
+    ft = { 'cs', 'vb' },  -- lazy-load on C# / VB files
+    dependencies = { 'neovim/nvim-lspconfig' },
+    config = function()
+        local ok, lspconfig = pcall(require, 'lspconfig')
+        if not ok then
+            vim.notify("nvim-lspconfig not available!", vim.log.levels.ERROR)
+            return
+        end
+
+        vim.api.nvim_create_autocmd('FileType', {
+            pattern = { 'cs', 'vb' },
+            callback = function()
+                -- check if csharpls is already running
+                for _, c in ipairs(vim.lsp.get_clients()) do
+                    if c.name == 'csharpls' then return end
+                end
+
+                vim.lsp.start({
+                    name = 'csharpls',
+                    cmd = { 'csharp-ls' },  -- must be in PATH
+                    filetypes = { 'cs', 'vb' },
+                    root_dir = vim.fs.dirname(
+                        vim.fs.find({ '*.sln', '*.csproj', '.git' }, { upward = true })[1]
+                        or vim.loop.cwd()
+                    ),
+                    on_attach = function(client, bufnr)
+                        local map = function(mode, lhs, rhs)
+                            vim.api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
+                        end
+
+                        map('n', 'gd', '<cmd>lua vim.lsp.buf.definition()<CR>')
+                        map('n', 'gr', '<cmd>lua vim.lsp.buf.references()<CR>')
+                        map('n', 'K', '<cmd>lua vim.lsp.buf.hover()<CR>')
+                        map('n', '<leader>rn', '<cmd>lua vim.lsp.buf.rename()<CR>')
+                        map('n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>')
+
+                    end,
+                })
+            end
+        })
+    end
+}
+

@@ -1,0 +1,31 @@
+
+return {
+  "catppuccin/nvim",
+  name = "catppuccin",
+  priority = 900,
+  config = function()
+    require("catppuccin").setup({
+      flavour = "mocha",
+      transparent_background = true, -- don't override bg
+      term_colors = true,
+      integrations = {
+        cmp = true,
+        gitsigns = true,
+        nvimtree = true,
+        telescope = true,
+      },
+    })
+    -- vim.cmd.colorscheme("catppuccin")
+
+    -- Ensure all major highlight groups are transparent
+    local groups = {
+      "Normal", "NormalNC", "NonText", "LineNr", "SignColumn",
+      "VertSplit", "StatusLine", "StatusLineNC",
+      "Pmenu", "PmenuSel", "NormalFloat"
+    }
+    for _, group in ipairs(groups) do
+      vim.api.nvim_set_hl(0, group, { bg = "none" })
+    end
+  end,
+}
+
