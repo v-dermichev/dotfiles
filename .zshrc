@@ -112,6 +112,13 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 eval "$(zoxide init zsh)"
+alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
+
+# Auto-start or attach to persistent "work" tmux session
+if command -v tmux &>/dev/null; then
+  # If not already inside tmux
+  [ -z "$TMUX" ] && tmux new-session -A -s work
+fi
 
 # Created by `pipx` on 2025-11-10 23:47:07
 export PATH="$PATH:/home/work/.local/bin"
