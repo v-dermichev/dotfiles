@@ -2,6 +2,7 @@
 
 ## 1. Requirements
 - zsh
+- wezterm
 - oh-my-zsh
 - neovim
 - tmux+tpm
