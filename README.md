@@ -4,7 +4,7 @@
 - zsh
 - wezterm
 - oh-my-zsh
-- neovim
+- neovim (using Lazy.nvim for plugins)
 - tmux+tpm
 - git
 - zsh-autoswitch-virtualenv
