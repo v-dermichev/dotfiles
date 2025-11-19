@@ -78,6 +78,7 @@ plugins=(
     dotenv
     zsh-autosuggestions
     zsh-syntax-highlighting
+    autoswitch_virtualenv
 )
 
 source $ZSH/oh-my-zsh.sh
