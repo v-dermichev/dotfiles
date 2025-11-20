@@ -4,6 +4,7 @@
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 export NVIM_HOME="$HOME/.config/nvim"
+export TERMINAL=/usr/bin/wezterm
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time Oh My Zsh is loaded, in which case,
@@ -73,13 +74,18 @@ ZSH_THEME="agnoster"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
+#
+#
 plugins=(
     git
     dotenv
     zsh-autosuggestions
     zsh-syntax-highlighting
     autoswitch_virtualenv
+    zoxide
+    fzf
 )
+
 
 source $ZSH/oh-my-zsh.sh
 
@@ -112,7 +118,6 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-eval "$(zoxide init zsh)"
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 
 # Auto-start or attach to persistent "work" tmux session
@@ -121,5 +126,10 @@ if command -v tmux &>/dev/null; then
   [ -z "$TMUX" ] && tmux new-session -A -s work
 fi
 
-# Created by `pipx` on 2025-11-10 23:47:07
+
+eval "$(zoxide init zsh)"
+
+# Bind z function to this completion
+compdef _zoxide_custom_complete z# Created by `pipx` on 2025-11-10 23:47:07
 export PATH="$PATH:/home/work/.local/bin"
+
