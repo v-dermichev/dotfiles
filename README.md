@@ -19,6 +19,8 @@ dotfiles config --local status.showUntrackedFiles no
 
 ## 3. Hyprland + Waybar Setup (Artix/Arch)
 
+> **Note:** This setup is systemd-free. All services use OpenRC, udev rules, and shell scripts instead of systemd units/timers.
+
 ### Packages
 ```shell
 # Core
@@ -43,9 +45,17 @@ pacman -S mission-center
 # Clipboard
 pacman -S wl-clipboard cliphist
 
+# Fonts
+pacman -S ttf-jetbrains-mono-nerd
+
+# Session & power
+pacman -S elogind dbus
+
 # Other
-pacman -S brightnessctl nm-applet gnome-keyring
+pacman -S brightnessctl network-manager-applet gnome-keyring
 ```
+
+> **Hardware-specific:** Edit `hyprland.conf` monitor names (`eDP-1`, `HDMI-A-1`) and resolutions to match your hardware. Run `hyprctl monitors` to see available outputs.
 
 ### System config (not in dotfiles)
 

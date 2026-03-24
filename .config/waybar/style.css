@@ -48,10 +48,6 @@ button:hover {
     box-shadow: inset 0 -3px #ffffff;
 }
 
-/* you can set a style on hover for any module like this */
-#pulseaudio:hover {
-    background-color: #a37800;
-}
 
 #workspaces button {
     padding: 0 5px;
@@ -114,30 +110,25 @@ button:hover {
 }
 
 #clock {
-    background-color: #64727D;
 }
 
 #battery {
-    background-color: #ffffff;
-    color: #000000;
 }
 
 #battery.charging, #battery.plugged {
-    color: #ffffff;
-    background-color: #26A65B;
 }
 
 @keyframes blink {
     to {
-        background-color: #ffffff;
-        color: #000000;
+        background-color: rgba(245, 60, 60, 0.5);
+        color: #ffffff;
     }
 }
 
 /* Using steps() instead of linear as a timing function to limit cpu usage */
 #battery.critical:not(.charging) {
-    background-color: #f53c3c;
-    color: #ffffff;
+    background-color: rgba(245, 60, 60, 0.3);
+    color: #f53c3c;
     animation-name: blink;
     animation-duration: 0.5s;
     animation-timing-function: steps(12);
@@ -169,38 +160,31 @@ label:focus {
 }
 
 #cpu {
-    background-color: #2ecc71;
-    color: #000000;
 }
 
 #memory {
-    background-color: #9b59b6;
 }
 
 #disk {
-    background-color: #964B00;
 }
 
 #backlight {
-    background-color: #90b1b1;
 }
 
 #network {
-    background-color: #2980b9;
 }
 
 #network.disconnected {
-    background-color: #f53c3c;
+    background-color: rgba(245, 60, 60, 0.3);
+    color: #f53c3c;
 }
 
 #pulseaudio {
-    background-color: #f1c40f;
-    color: #000000;
 }
 
 #pulseaudio.muted {
-    background-color: #90b1b1;
-    color: #2a5c45;
+    background-color: rgba(245, 60, 60, 0.4);
+    color: #f53c3c;
 }
 
 #wireplumber {
@@ -227,15 +211,14 @@ label:focus {
 }
 
 #temperature {
-    background-color: #f0932b;
 }
 
 #temperature.critical {
-    background-color: #eb4d4b;
+    background-color: rgba(235, 77, 75, 0.3);
+    color: #eb4d4b;
 }
 
 #tray {
-    background-color: #2980b9;
 }
 
 #tray > .passive {
@@ -244,13 +227,16 @@ label:focus {
 
 #tray > .needs-attention {
     -gtk-icon-effect: highlight;
-    background-color: #eb4d4b;
+    background-color: rgba(235, 77, 75, 0.3);
 }
 
 #custom-notification-sound,
+#custom-opacity,
 #custom-layout,
 #custom-hypr-split,
-#bluetooth {
+#custom-power,
+#bluetooth,
+#pulseaudio {
     padding: 0 10px;
     box-shadow: inset 0 -3px transparent;
     transition-property: background, box-shadow;
@@ -258,19 +244,22 @@ label:focus {
 }
 
 #custom-notification-sound:hover,
+#custom-opacity:hover,
 #custom-layout:hover,
 #custom-hypr-split:hover,
-#bluetooth:hover {
+#custom-power:hover,
+#bluetooth:hover,
+#pulseaudio:hover {
     background: rgba(0, 0, 0, 0.2);
     box-shadow: inset 0 -3px #ffffff;
 }
 
 #custom-layout {
-    min-width: 55px;
+    min-width: 20px;
 }
 
 #custom-hypr-split {
-    min-width: 25px;
+    min-width: 15px;
 }
 
 #idle_inhibitor {
@@ -300,8 +289,6 @@ label:focus {
 }
 
 #language {
-    background: #00b093;
-    color: #740864;
     padding: 0 5px;
     margin: 0 5px;
     min-width: 16px;
