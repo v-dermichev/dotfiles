@@ -19,7 +19,9 @@ dotfiles config --local status.showUntrackedFiles no
 
 ## 3. Hyprland + Waybar Setup (Artix/Arch)
 
-> **Note:** This setup is systemd-free. All services use OpenRC, udev rules, and shell scripts instead of systemd units/timers.
+> **Note:** This setup is systemd-free. All services use OpenRC, elogind, udev rules, and shell scripts instead of systemd units/timers.
+>
+> **Privacy:** systemd merged a `birthDate` field into its userdb records ([PR #40954](https://github.com/systemd/systemd/pull/40954)) for age verification compliance. elogind is unaffected — it only handles login sessions and power management, and does not include systemd's userdb/homectl components where the DOB field lives.
 
 ### Packages
 ```shell
