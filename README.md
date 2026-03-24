@@ -1,3 +1,11 @@
+# Dotfiles
+
+![Showcase](showcase.png)
+
+Hyprland + Waybar setup with transparent windows, nerd font icons, smart monitor management, and a unified dark theme across all components.
+
+All hardware-specific values (monitor names, resolutions, opacity, bluetooth devices) are configurable via variables at the top of `hyprland.conf` — no need to hunt through the config.
+
 # Instructions
 
 ## 1. Requirements
