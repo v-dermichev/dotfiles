@@ -2,7 +2,7 @@
 
 ## 1. Requirements
 - zsh
-- wezterm
+- kitty or wezterm (terminal)
 - oh-my-zsh
 - neovim (using Lazy.nvim for plugins)
 - tmux+tpm
@@ -56,6 +56,9 @@ pacman -S pavucontrol
 
 # Session & power
 pacman -S elogind dbus
+
+# Terminal (kitty is default in hyprland.conf)
+pacman -S kitty
 
 # Other
 pacman -S brightnessctl network-manager-applet gnome-keyring
