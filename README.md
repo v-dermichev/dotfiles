@@ -11,7 +11,7 @@
 
 ## 2. One of many ways to replicate setup
 ```shell
-git clone --bare https://github.com/v-dermichev.git $HOME/.dotfiles
+git clone --bare https://github.com/v-dermichev/dotfiles.git $HOME/.dotfiles
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 dotfiles checkout
 dotfiles config --local status.showUntrackedFiles no
@@ -24,7 +24,7 @@ dotfiles config --local status.showUntrackedFiles no
 ### Packages
 ```shell
 # Core
-pacman -S hyprland waybar wofi grim slurp swappy mako socat jq
+pacman -S hyprland waybar wofi grim slurp swappy mako socat jq qt6-wayland
 
 # Screenshot & annotation
 pacman -S hyprshot satty
@@ -47,6 +47,12 @@ pacman -S wl-clipboard cliphist
 
 # Fonts
 pacman -S ttf-jetbrains-mono-nerd
+
+# NVIDIA (skip if not using NVIDIA)
+pacman -S nvidia-open-dkms nvidia-utils
+
+# Audio control
+pacman -S pavucontrol
 
 # Session & power
 pacman -S elogind dbus
@@ -108,3 +114,9 @@ ReconnectIntervals=1,2,4,8,16,32,64
 @audio - memlock unlimited
 ```
 Add your user to the `audio` group: `gpasswd -a $USER audio`
+
+### Notes
+
+- `.zprofile` starts pipewire before Hyprland so all apps have audio immediately
+- The `--systemd` flag in `dbus-update-activation-environment` works with elogind too
+- NVIDIA runtime PM script paths (`0000:01:00.0`, `ADP1`) are hardware-specific — adjust for your system
