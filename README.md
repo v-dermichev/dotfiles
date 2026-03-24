@@ -121,5 +121,5 @@ Add your user to the `audio` group: `gpasswd -a $USER audio`
 ### Notes
 
 - `.zprofile` starts pipewire before Hyprland so all apps have audio immediately
-- The `--systemd` flag in `dbus-update-activation-environment` works with elogind too
+- The `--systemd` flag in `dbus-update-activation-environment` is misleadingly named — it just exports env vars to the D-Bus activation environment, works with elogind, no systemd required
 - NVIDIA runtime PM script paths (`0000:01:00.0`, `ADP1`) are hardware-specific — adjust for your system
