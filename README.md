@@ -1,6 +1,6 @@
 # Dotfiles
 
-![Showcase](showcase.png)
+[![Showcase](showcase.png)](showcase.png)
 
 Hyprland + Waybar setup with transparent windows, nerd font icons, smart monitor management, and a unified dark theme across all components.
 
