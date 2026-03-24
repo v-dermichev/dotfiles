@@ -1,9 +1,9 @@
 #!/bin/bash
-# Auto-connect trusted bluetooth audio devices after boot
-# Waits for bluetooth adapter to be powered, then attempts connection
+# Auto-connect trusted bluetooth devices after boot
+# Accepts multiple MACs as arguments or space-separated in HYPR_BT_DEVICES
 
-DEVICE="${HYPR_BT_DEVICE:-${1:-}}"
-[ -z "$DEVICE" ] && exit 0
+DEVICES="${@:-$HYPR_BT_DEVICES}"
+[ -z "$DEVICES" ] && exit 0
 MAX_ATTEMPTS=5
 
 # Wait for bluetooth adapter
@@ -12,11 +12,13 @@ for i in $(seq 1 10); do
     sleep 1
 done
 
-# Attempt connection
-for i in $(seq 1 $MAX_ATTEMPTS); do
-    if bluetoothctl info "$DEVICE" 2>/dev/null | grep -q "Connected: yes"; then
-        exit 0
-    fi
-    bluetoothctl connect "$DEVICE" 2>/dev/null
-    sleep 3
+# Attempt connection for each device
+for DEV in $DEVICES; do
+    for i in $(seq 1 $MAX_ATTEMPTS); do
+        if bluetoothctl info "$DEV" 2>/dev/null | grep -q "Connected: yes"; then
+            break
+        fi
+        bluetoothctl connect "$DEV" 2>/dev/null
+        sleep 3
+    done
 done
