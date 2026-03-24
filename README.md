@@ -1,6 +1,8 @@
 # Dotfiles
 
-[![Showcase](showcase.png)](showcase.png)
+<a href="https://raw.githubusercontent.com/v-dermichev/dotfiles/master/showcase.png">
+  <img src="showcase.png" alt="Showcase" width="100%">
+</a>
 
 Hyprland + Waybar setup with transparent windows, nerd font icons, smart monitor management, and a unified dark theme across all components.
 
