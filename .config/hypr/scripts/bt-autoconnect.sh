@@ -4,13 +4,16 @@
 
 DEVICES="${@:-$HYPR_BT_DEVICES}"
 [ -z "$DEVICES" ] && exit 0
-MAX_ATTEMPTS=5
+MAX_ATTEMPTS=10
 
-# Wait for bluetooth adapter
-for i in $(seq 1 10); do
+# Wait for bluetooth adapter to be powered
+for i in $(seq 1 30); do
     bluetoothctl show 2>/dev/null | grep -q "Powered: yes" && break
     sleep 1
 done
+
+# Extra delay for adapter to finish scanning
+sleep 3
 
 # Attempt connection for each device
 for DEV in $DEVICES; do
@@ -19,6 +22,6 @@ for DEV in $DEVICES; do
             break
         fi
         bluetoothctl connect "$DEV" 2>/dev/null
-        sleep 3
+        sleep 5
     done
 done

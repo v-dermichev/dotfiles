@@ -1,15 +1,19 @@
 #!/bin/bash
-# Watch Hyprland events and re-disable eDP-1 whenever monitors change
+# Watch Hyprland events and re-disable internal monitor whenever monitors change
 # Handles: DPMS wake, suspend/resume, HDMI hotplug
+# Uses env vars: HYPR_INTERNAL, HYPR_EXTERNAL, HYPR_INTERNAL_MODE
 
 SOCKET="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
+INT="${HYPR_INTERNAL:-eDP-1}"
+EXT="${HYPR_EXTERNAL:-HDMI-A-1}"
+MODE="${HYPR_INTERNAL_MODE:-1920x1080@144}"
 
 handle_monitor_change() {
     sleep 0.5
-    if hyprctl monitors | grep -q "HDMI-A-1"; then
-        hyprctl keyword monitor "eDP-1, disable"
+    if hyprctl monitors | grep -q "$EXT"; then
+        hyprctl keyword monitor "$INT, disable"
     else
-        hyprctl keyword monitor "eDP-1, 1920x1080@144, 0x0, 1"
+        hyprctl keyword monitor "$INT, $MODE, 0x0, 1"
     fi
 }
 

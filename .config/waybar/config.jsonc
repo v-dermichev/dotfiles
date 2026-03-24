@@ -64,7 +64,7 @@
             "warning": 30,
             "critical": 15
         },
-        "format": "{icon} {capacity}%",
+        "format": "{icon} {capacity}",
         "format-full": "󰁹 {capacity}%",
         "format-charging": "󰂄 {capacity}%",
         "format-plugged": "󰚥 {capacity}%",
@@ -122,7 +122,7 @@
         "return-type": "json",
         "interval": "once",
         "signal": 10,
-        "on-click": "if [ ! -f /tmp/opacity-enabled ] || [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo 0 > /tmp/opacity-enabled; hyprctl keyword decoration:active_opacity 1.0; hyprctl keyword decoration:inactive_opacity 1.0; else echo 1 > /tmp/opacity-enabled; hyprctl keyword decoration:active_opacity 0.9; hyprctl keyword decoration:inactive_opacity 0.8; fi; pkill -RTMIN+10 waybar"
+        "on-click": "if [ ! -f /tmp/opacity-enabled ] || [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo 0 > /tmp/opacity-enabled; hyprctl keyword decoration:active_opacity 1.0; hyprctl keyword decoration:inactive_opacity 1.0; else echo 1 > /tmp/opacity-enabled; hyprctl keyword decoration:active_opacity $HYPR_ACTIVE_OPACITY; hyprctl keyword decoration:inactive_opacity $HYPR_INACTIVE_OPACITY; fi; pkill -RTMIN+10 waybar"
     },
     "custom/hypr-split": {
         "exec": "~/.config/waybar/scripts/hypr-split-status.sh",
