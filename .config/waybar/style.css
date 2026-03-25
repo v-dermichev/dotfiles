@@ -236,6 +236,7 @@ label:focus {
 #custom-hypr-split,
 #custom-power,
 #custom-wallpaper-random,
+#custom-wallpaper-starred,
 #custom-wallpaper-star,
 #custom-wallpaper-trash,
 #bluetooth,
@@ -252,6 +253,7 @@ label:focus {
 #custom-hypr-split:hover,
 #custom-power:hover,
 #custom-wallpaper-random:hover,
+#custom-wallpaper-starred:hover,
 #custom-wallpaper-star:hover,
 #custom-wallpaper-trash:hover,
 #bluetooth:hover,
@@ -260,8 +262,21 @@ label:focus {
     box-shadow: inset 0 -3px #ffffff;
 }
 
+#custom-wallpaper-random,
+#custom-wallpaper-starred {
+    letter-spacing: 4px;
+}
+
+#custom-wallpaper-starred {
+    color: #d4a84b;
+}
+
+#custom-wallpaper-star.unstarred {
+    color: rgba(255, 255, 255, 0.3);
+}
+
 #custom-wallpaper-star.starred {
-    color: #f1c40f;
+    color: #d4a84b;
 }
 
 #custom-wallpaper-trash.disabled {

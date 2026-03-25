@@ -12,8 +12,9 @@
     ],
     "modules-right": [
         "custom/wallpaper-random",
-        "custom/wallpaper-star",
         "custom/wallpaper-trash",
+        "custom/wallpaper-star",
+        "custom/wallpaper-starred",
         "custom/notification-sound",
         "custom/opacity",
         // "bluetooth",
@@ -135,12 +136,17 @@
         "on-click": "~/.config/waybar/scripts/hypr-split-toggle.sh"
     },
     "custom/wallpaper-random": {
-        "format": "󰒝",
+        "format": "󰒟󰋩",
         "tooltip-format": "Random wallpaper",
         "on-click": "~/.config/hypr/scripts/wallpaper-random.sh"
     },
+    "custom/wallpaper-starred": {
+        "format": "󰒟󰓎",
+        "tooltip-format": "Random from starred",
+        "on-click": "~/.config/hypr/scripts/wallpaper-starred.sh"
+    },
     "custom/wallpaper-star": {
-        "exec": "if [ -f /tmp/current-wallpaper ] && grep -qxF \"$(cat /tmp/current-wallpaper)\" ~/Pictures/Wallpapers/.starred 2>/dev/null; then echo '{\"text\": \"󰓎\", \"tooltip\": \"Starred\", \"class\": \"starred\"}'; else echo '{\"text\": \"󰓌\", \"tooltip\": \"Not starred\", \"class\": \"unstarred\"}'; fi",
+        "exec": "if [ -f /tmp/current-wallpaper ] && grep -qxF \"$(cat /tmp/current-wallpaper)\" ~/Pictures/Wallpapers/.starred 2>/dev/null; then echo '{\"text\": \"󰓎\", \"tooltip\": \"Starred\", \"class\": \"starred\"}'; else echo '{\"text\": \"󰓎\", \"tooltip\": \"Not starred\", \"class\": \"unstarred\"}'; fi",
         "return-type": "json",
         "interval": "once",
         "signal": 11,

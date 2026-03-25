@@ -61,6 +61,9 @@ pacman -S ttf-jetbrains-mono-nerd
 # NVIDIA (skip if not using NVIDIA)
 pacman -S nvidia-open-dkms nvidia-utils
 
+# Wallpaper
+pacman -S swww
+
 # Audio control
 pacman -S pavucontrol
 
@@ -127,6 +130,19 @@ ReconnectIntervals=1,2,4,8,16,32,64
 @audio - memlock unlimited
 ```
 Add your user to the `audio` group: `gpasswd -a $USER audio`
+
+### Wallpaper Roulette
+
+Waybar includes 4 wallpaper controls (left to right):
+
+1. **Random** (󰒟󰋩) — pick a random wallpaper from `~/Pictures/Wallpapers/`, excluding trashed
+2. **Trash** (󰩹) — move current wallpaper to `.trash/` and pick a new one. Grayed out when starred
+3. **Star** (󰓎) — toggle star on current wallpaper. Dimmed when unstarred, golden when starred
+4. **Starred Random** (󰒟󰓎) — pick a random wallpaper from starred favorites only
+
+Workflow: spam random to browse, trash the bad, star the good, then use starred random to enjoy favorites.
+
+State is stored in `~/Pictures/Wallpapers/.starred` (list of paths) and `.trash/` (discarded images). Uses `swww` for smooth fade transitions.
 
 ### Notes
 
