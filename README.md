@@ -56,7 +56,7 @@ pacman -S mission-center
 pacman -S wl-clipboard cliphist
 
 # Fonts
-pacman -S ttf-jetbrains-mono-nerd
+pacman -S ttf-jetbrains-mono-nerd noto-fonts-emoji
 
 # NVIDIA (skip if not using NVIDIA)
 pacman -S nvidia-open-dkms nvidia-utils
