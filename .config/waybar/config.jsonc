@@ -4,6 +4,10 @@
     "spacing": 4,
     "modules-left": [
         "hyprland/workspaces",
+        "custom/scratchpad-music",
+        "custom/scratchpad-messenger",
+        "custom/scratchpad-telegram",
+        "custom/scratchpad-obsidian",
         "custom/layout",
         "custom/hypr-split"
     ],
@@ -30,7 +34,26 @@
         "tray",
         "custom/power"
     ],
-    "hyprland/workspaces": {},
+    "hyprland/workspaces": {
+        "persistent-workspaces": {
+            "8": []
+        },
+        "format": "{icon}",
+        "format-icons": {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "IDE": "󰨞",
+            "Steam": "󰓓",
+            "default": "{name}"
+        }
+    },
     "hyprland/window": {
         "max-length": 50
     },
@@ -134,6 +157,26 @@
         "interval": "once",
         "signal": 8,
         "on-click": "~/.config/waybar/scripts/hypr-split-toggle.sh"
+    },
+    "custom/scratchpad-music": {
+        "format": "󰎆",
+        "tooltip-format": "Music (Super+Z)",
+        "on-click": "hyprctl dispatch togglespecialworkspace music"
+    },
+    "custom/scratchpad-messenger": {
+        "format": "󰍡",
+        "tooltip-format": "Messenger (Super+X)",
+        "on-click": "hyprctl dispatch togglespecialworkspace messenger"
+    },
+    "custom/scratchpad-obsidian": {
+        "format": "󱓧",
+        "tooltip-format": "Obsidian (Super+N)",
+        "on-click": "hyprctl dispatch togglespecialworkspace obsidian"
+    },
+    "custom/scratchpad-telegram": {
+        "format": "󰍡",
+        "tooltip-format": "Telegram (Super+V)",
+        "on-click": "hyprctl dispatch togglespecialworkspace telegram"
     },
     "custom/wallpaper-random": {
         "format": "󰒟󰋩",
