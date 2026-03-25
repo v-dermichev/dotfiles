@@ -230,6 +230,8 @@ label:focus {
     background-color: rgba(235, 77, 75, 0.3);
 }
 
+#custom-workspace-ide,
+#custom-workspace-steam,
 #custom-scratchpad-music,
 #custom-scratchpad-messenger,
 #custom-scratchpad-obsidian,
@@ -251,6 +253,8 @@ label:focus {
     transition-duration: 300ms;
 }
 
+#custom-workspace-ide:hover,
+#custom-workspace-steam:hover,
 #custom-scratchpad-music:hover,
 #custom-scratchpad-messenger:hover,
 #custom-scratchpad-obsidian:hover,
@@ -267,6 +271,16 @@ label:focus {
 #bluetooth:hover,
 #pulseaudio:hover {
     background: rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 -3px #ffffff;
+}
+
+#custom-workspace-ide.active,
+#custom-workspace-steam.active,
+#custom-scratchpad-music.active,
+#custom-scratchpad-messenger.active,
+#custom-scratchpad-obsidian.active,
+#custom-scratchpad-telegram.active {
+    background-color: #64727D;
     box-shadow: inset 0 -3px #ffffff;
 }
 
