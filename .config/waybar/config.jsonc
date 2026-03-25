@@ -164,9 +164,11 @@
         "on-click": "hyprctl dispatch togglespecialworkspace music"
     },
     "custom/scratchpad-messenger": {
-        "format": "󰍡",
-        "tooltip-format": "Messenger (Super+X)",
-        "on-click": "hyprctl dispatch togglespecialworkspace messenger"
+        "exec": "C=$(cat /tmp/notif-counts/messenger 2>/dev/null || echo 0); if [ \"$C\" -gt 0 ]; then echo '{\"text\": \"󰍡 '$C'\", \"tooltip\": \"Messenger ('$C' new)\", \"class\": \"has-notif\"}'; else echo '{\"text\": \"󰍡\", \"tooltip\": \"Messenger (Super+X)\", \"class\": \"no-notif\"}'; fi",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 12,
+        "on-click": "echo 0 > /tmp/notif-counts/messenger; pkill -RTMIN+12 waybar; hyprctl dispatch togglespecialworkspace messenger"
     },
     "custom/scratchpad-obsidian": {
         "format": "󱓧",
@@ -174,9 +176,11 @@
         "on-click": "hyprctl dispatch togglespecialworkspace obsidian"
     },
     "custom/scratchpad-telegram": {
-        "format": "󰍡",
-        "tooltip-format": "Telegram (Super+V)",
-        "on-click": "hyprctl dispatch togglespecialworkspace telegram"
+        "exec": "C=$(cat /tmp/notif-counts/telegram 2>/dev/null || echo 0); if [ \"$C\" -gt 0 ]; then echo '{\"text\": \"󰍡 '$C'\", \"tooltip\": \"Telegram ('$C' new)\", \"class\": \"has-notif\"}'; else echo '{\"text\": \"󰍡\", \"tooltip\": \"Telegram (Super+V)\", \"class\": \"no-notif\"}'; fi",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 12,
+        "on-click": "echo 0 > /tmp/notif-counts/telegram; pkill -RTMIN+12 waybar; hyprctl dispatch togglespecialworkspace telegram"
     },
     "custom/wallpaper-random": {
         "format": "󰒟󰋩",
