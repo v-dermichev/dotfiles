@@ -135,10 +135,10 @@ Add your user to the `audio` group: `gpasswd -a $USER audio`
 
 Waybar includes 4 wallpaper controls (left to right):
 
-1. **Random** (󰒟󰋩) — pick a random wallpaper from `~/Pictures/Wallpapers/`, excluding trashed
-2. **Trash** (󰩹) — move current wallpaper to `.trash/` and pick a new one. Grayed out when starred
-3. **Star** (󰓎) — toggle star on current wallpaper. Dimmed when unstarred, golden when starred
-4. **Starred Random** (󰒟󰓎) — pick a random wallpaper from starred favorites only
+1. **Random** (shuffle+image icon) — pick a random wallpaper from `~/Pictures/Wallpapers/`, excluding trashed
+2. **Trash** (bin icon) — move current wallpaper to `.trash/` and pick a new one. Grayed out when starred
+3. **Star** (star icon) — toggle star on current wallpaper. Dimmed when unstarred, golden when starred
+4. **Starred Random** (shuffle+star icon) — pick a random wallpaper from starred favorites only
 
 Workflow: spam random to browse, trash the bad, star the good, then use starred random to enjoy favorites.
 
