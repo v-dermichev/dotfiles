@@ -77,7 +77,12 @@ pacman -S kitty
 pacman -S brightnessctl network-manager-applet gnome-keyring
 ```
 
-> **Hardware-specific:** Edit `hyprland.conf` monitor names (`eDP-1`, `HDMI-A-1`) and resolutions to match your hardware. Run `hyprctl monitors` to see available outputs.
+> **Hardware-specific:** Edit variables at the top of `hyprland.conf` to match your hardware:
+> - `$internal` / `$external` — monitor names (run `hyprctl monitors` to find yours)
+> - `$internalMode` / `$externalMode` — resolutions and refresh rates
+> - `$btDevices` — bluetooth MAC address(es), space-separated
+> - `$screenshotDir` — where screenshots and recordings are saved
+> - `$activeOpacity` / `$inactiveOpacity` — window transparency levels
 
 ### System config (not in dotfiles)
 
