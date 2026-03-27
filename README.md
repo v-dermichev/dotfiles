@@ -66,6 +66,9 @@ pacman -S nvidia-open-dkms nvidia-utils
 
 # Wallpaper
 pacman -S swww
+# Build from source: https://github.com/v-dermichev/swww-wproulette
+git clone https://github.com/v-dermichev/swww-wproulette && cd swww-wproulette
+cargo build --release && sudo cp target/release/wproulette /usr/local/bin/
 
 # Audio control
 pacman -S pavucontrol
@@ -155,16 +158,20 @@ All changes apply immediately — no session restart needed.
 
 ### Wallpaper Roulette
 
+Powered by [wproulette](https://github.com/v-dermichev/swww-wproulette) — a Rust CLI for swww with waybar integration.
+
 Waybar includes 4 wallpaper controls (left to right):
 
-1. **Random** (shuffle+image icon) — pick a random wallpaper from `~/Pictures/Wallpapers/`, excluding trashed
-2. **Trash** (bin icon) — move current wallpaper to `.trash/` and pick a new one. Grayed out when starred
-3. **Star** (star icon) — toggle star on current wallpaper. Dimmed when unstarred, golden when starred
-4. **Starred Random** (shuffle+star icon) — pick a random wallpaper from starred favorites only
+1. **Random** (shuffle+image icon) — pick a random wallpaper, excluding trashed
+2. **Trash** (bin icon) — trash current and pick a new one. Grayed out when starred
+3. **Star** (star icon) — toggle star on current. Dimmed when unstarred, golden when starred
+4. **Starred Random** (shuffle+star icon) — pick random from starred favorites only
 
 Workflow: spam random to browse, trash the bad, star the good, then use starred random to enjoy favorites.
 
-State is stored in `~/Pictures/Wallpapers/.starred` (list of paths) and `.trash/` (discarded images). Uses `swww` for smooth fade transitions.
+Trashed wallpapers preserve subdirectory structure with content hash dedup and can be restored to their original location via `wproulette restore`.
+
+Config and state in `~/.config/wproulette/` — wallpaper directory, transition style, badge glyph.
 
 ### Notes
 
