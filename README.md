@@ -143,12 +143,15 @@ Add your user to the `audio` group: `gpasswd -a $USER audio`
 
 Configured via simple pipe-delimited files — edit and save, changes auto-apply:
 
-- **`~/.config/hypr/scratchpads.conf`** — toggle-overlay apps (format: `name|key|command|icon|color`)
+- **`~/.config/hypr/scratchpads.conf`** — toggle-overlay apps (format: `name|key|command|icon|color|notify_match`)
 - **`~/.config/hypr/workspaces.conf`** — dedicated app workspaces (format: `name|key|command|icon|class_pattern|fullscreen`)
+- **`~/.config/hypr/theme.conf`** — shared theme variables (notification badge glyph, etc.)
 
 A config watcher (`config-watcher.sh`) monitors these files, regenerates Hyprland binds + window rules, assembles the waybar config from `config.template.jsonc` + generated fragments, and reloads waybar — all in the background with no screen flicker.
 
-Keybind changes require a session restart. Waybar/window rule changes apply immediately.
+Notification badges are configured per-scratchpad via the `notify_match` field — comma-separated D-Bus app name prefixes (e.g. `Telegram Desktop,org.telegram`). The badge indicator glyph is configurable in `theme.conf`.
+
+All changes apply immediately — no session restart needed.
 
 ### Wallpaper Roulette
 

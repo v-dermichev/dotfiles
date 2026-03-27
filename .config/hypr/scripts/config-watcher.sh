@@ -16,7 +16,7 @@ regenerate
 
 # Watch for changes
 while true; do
-    inotifywait -q -e modify,create "$HYPR_DIR/scratchpads.conf" "$HYPR_DIR/workspaces.conf" "$HOME/.config/waybar/config.template.jsonc" 2>/dev/null
+    inotifywait -q -e modify,create "$HYPR_DIR/scratchpads.conf" "$HYPR_DIR/workspaces.conf" "$HYPR_DIR/theme.conf" "$HOME/.config/waybar/config.template.jsonc" 2>/dev/null
     sleep 0.1
     regenerate &
 done

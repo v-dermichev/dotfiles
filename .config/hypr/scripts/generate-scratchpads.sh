@@ -4,9 +4,11 @@
 CONF="${1:-$HOME/.config/hypr/scratchpads.conf}"
 HYPR_OUT="$HOME/.config/hypr/scratchpads-generated.conf"
 WAYBAR_DIR="$HOME/.config/waybar"
+THEME="$HOME/.config/hypr/theme.conf"
 
-# Notification-tracked apps
-NOTIF_APPS="telegram messenger"
+# Read badge from theme.conf
+BADGE="●"
+[ -f "$THEME" ] && BADGE=$(grep "^badge=" "$THEME" | cut -d= -f2)
 
 [ -f "$CONF" ] || exit 1
 
@@ -15,29 +17,30 @@ NOTIF_APPS="telegram messenger"
     echo "# Auto-generated from scratchpads.conf — do not edit manually"
     echo ""
     echo "# Workspace definitions"
-    while IFS='|' read -r name key cmd icon color; do
+    while IFS='|' read -r name key cmd icon color notify_match; do
         [[ "$name" =~ ^#.*$ || -z "$name" ]] && continue
         echo "workspace = special:$name, on-created-empty:$cmd"
     done < "$CONF"
     echo ""
     echo "# Keybinds"
-    while IFS='|' read -r name key cmd icon color; do
+    while IFS='|' read -r name key cmd icon color notify_match; do
         [[ "$name" =~ ^#.*$ || -z "$name" ]] && continue
-        if echo "$NOTIF_APPS" | grep -qw "$name"; then
-            echo "bind = \$mod, $key, exec, echo 0 > /tmp/notif-counts/$name; hyprctl dispatch togglespecialworkspace $name; pkill -RTMIN+13 waybar"
-        else
+        notify_match=$(echo "$notify_match" | tr -d ' ')
+        if [ -z "$notify_match" ]; then
             echo "bind = \$mod, $key, togglespecialworkspace, $name"
+        else
+            echo "bind = \$mod, $key, exec, echo 0 > /tmp/notif-counts/$name; hyprctl dispatch togglespecialworkspace $name; pkill -RTMIN+13 waybar"
         fi
     done < "$CONF"
 } > "$HYPR_OUT"
 
 # --- Waybar (Python for JSON) ---
-NOTIF_APPS="$NOTIF_APPS" python3 << 'PYEOF'
+BADGE="$BADGE" python3 << 'PYEOF'
 import os
 
 conf_path = os.path.expanduser(os.environ.get("CONF", "~/.config/hypr/scratchpads.conf"))
 waybar_dir = os.path.expanduser("~/.config/waybar")
-notif_apps = os.environ.get("NOTIF_APPS", "").split()
+badge = os.environ.get("BADGE", "●")
 
 entries = []
 with open(conf_path) as f:
@@ -47,12 +50,14 @@ with open(conf_path) as f:
             continue
         parts = line.split("|")
         if len(parts) >= 4:
+            notify_match = parts[5].strip() if len(parts) > 5 and parts[5].strip() else ""
             entries.append({
                 "name": parts[0],
                 "key": parts[1],
                 "cmd": parts[2],
                 "icon": parts[3],
                 "color": parts[4].strip() if len(parts) > 4 and parts[4].strip() else None,
+                "notify": bool(notify_match),
             })
 
 # Module list
@@ -66,16 +71,15 @@ for e in entries:
     name = e["name"]
     key_upper = e["key"].upper()
     icon = e["icon"]
-    has_notif = name in notif_apps
-
     cap_name = name.capitalize()
-    if has_notif:
+
+    if e["notify"]:
         exec_cmd = (
             "C=$(cat /tmp/notif-counts/" + name + " 2>/dev/null || echo 0); "
             "ACTIVE='inactive'; "
             "hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:" + name + "' && ACTIVE='active'; "
             'if [ \\"$C\\" -gt 0 ] && [ \\"$ACTIVE\\" = \'inactive\' ]; then '
-            "echo '{\\\"text\\\": \\\"" + icon + " '$C'\\\", \\\"tooltip\\\": \\\"" + cap_name + " ('$C' new)\\\", \\\"class\\\": \\\"has-notif\\\"}'; "
+            "echo '{\\\"text\\\": \\\"" + icon + " " + badge + "\\\", \\\"tooltip\\\": \\\"" + cap_name + " (new)\\\", \\\"class\\\": \\\"has-notif\\\"}'; "
             "else echo '{\\\"text\\\": \\\"" + icon + "\\\", \\\"tooltip\\\": \\\"" + cap_name + " (Super+" + key_upper + ")\\\", \\\"class\\\": \\\"'$ACTIVE'\\\"}'; fi"
         )
         on_click = "echo 0 > /tmp/notif-counts/" + name + "; hyprctl dispatch togglespecialworkspace " + name + "; pkill -RTMIN+13 waybar"
@@ -115,6 +119,9 @@ css += f"    background: rgba(0, 0, 0, 0.2);\n    box-shadow: inset 0 -3px #ffff
 for e in entries:
     if e["color"]:
         css += f'#custom-scratchpad-{e["name"]} {{ color: {e["color"]}; }}\n'
+    # Brighter color for has-notif
+    if e["notify"] and e["color"]:
+        css += f'#custom-scratchpad-{e["name"]}.has-notif {{ color: {e["color"]}; filter: brightness(1.3); }}\n'
 
 # Group margins
 if entries:
@@ -124,5 +131,48 @@ if entries:
 with open(os.path.join(waybar_dir, "scratchpad-style.css"), "w") as f:
     f.write(css)
 PYEOF
+
+# --- Notification counter script ---
+{
+    echo '#!/bin/bash'
+    echo '# Auto-generated notification counter'
+    echo 'COUNT_DIR="/tmp/notif-counts"'
+    echo 'mkdir -p "$COUNT_DIR"'
+    echo ''
+    echo 'dbus-monitor "interface='"'"'org.freedesktop.Notifications'"'"',member='"'"'Notify'"'"'" 2>/dev/null | while read -r line; do'
+    echo '    if [[ "$line" == *"member=Notify"* ]]; then'
+    echo '        read -r appline'
+    echo '        if [[ "$appline" == *"string \""* ]]; then'
+    echo '            APP=$(echo "$appline" | sed '"'"'s/.*string "//;s/".*//'"'"')'
+    echo '            case "$APP" in'
+
+    while IFS='|' read -r name key cmd icon color notify_match; do
+        [[ "$name" =~ ^#.*$ || -z "$name" ]] && continue
+        notify_match=$(echo "$notify_match" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        [ -z "$notify_match" ] && continue
+
+        # Build case pattern from comma-separated prefixes
+        PATTERN=""
+        IFS=',' read -ra PREFIXES <<< "$notify_match"
+        for p in "${PREFIXES[@]}"; do
+            p=$(echo "$p" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            [ -n "$PATTERN" ] && PATTERN+="|"
+            PATTERN+="\"${p}\"*"
+        done
+
+        echo "                $PATTERN)"
+        echo "                    FILE=\"\$COUNT_DIR/$name\""
+        echo '                    COUNT=$(cat "$FILE" 2>/dev/null || echo 0)'
+        echo '                    echo $((COUNT + 1)) > "$FILE"'
+        echo '                    pkill -RTMIN+13 waybar'
+        echo '                    ;;'
+    done < "$CONF"
+
+    echo '            esac'
+    echo '        fi'
+    echo '    fi'
+    echo 'done'
+} > "$HOME/.config/hypr/scripts/notification-counter.sh"
+chmod +x "$HOME/.config/hypr/scripts/notification-counter.sh"
 
 echo "Generated scratchpad configs"
