@@ -37,24 +37,24 @@ window#waybar.hidden {
 }
 
 #workspaces button.urgent {
-    background-color: #eb4d4b;
+    background-color: rgba(84, 160, 224, 0.25);
+    box-shadow: inset 0 -3px #54a0e0;
+    color: #7dc4ff;
 }
 
-#window {
-    margin: 0 4px;
-}
+/* Special workspace buttons — wider padding */
+#workspaces button.special { padding: 0 8px; }
 
-#workspaces {
-    margin: 0;
-}
+/* Per-workspace colors */
+#workspaces button.telegram { color: #54a0e0; }
+#workspaces button.messenger { color: #5ec4b6; }
+#workspaces button.starred { color: #d4a84b; }
+
+/* Spacing */
+#window { margin: 0 4px; }
+#workspaces { margin: 0; }
 
 /* Common interactive module style */
-#custom-workspace-ide,
-#custom-workspace-steam,
-#custom-scratchpad-music,
-#custom-scratchpad-messenger,
-#custom-scratchpad-obsidian,
-#custom-scratchpad-telegram,
 #custom-notification-history,
 #custom-notification-sound,
 #custom-opacity,
@@ -75,12 +75,6 @@ window#waybar.hidden {
     transition-duration: 300ms;
 }
 
-#custom-workspace-ide:hover,
-#custom-workspace-steam:hover,
-#custom-scratchpad-music:hover,
-#custom-scratchpad-messenger:hover,
-#custom-scratchpad-obsidian:hover,
-#custom-scratchpad-telegram:hover,
 #custom-notification-history:hover,
 #custom-notification-sound:hover,
 #custom-opacity:hover,
@@ -96,50 +90,6 @@ window#waybar.hidden {
     background: rgba(0, 0, 0, 0.2);
     box-shadow: inset 0 -3px #ffffff;
 }
-
-/* Active state — matches workspace button active */
-#custom-workspace-ide.active,
-#custom-workspace-steam.active,
-#custom-scratchpad-music.active,
-#custom-scratchpad-messenger.active,
-#custom-scratchpad-obsidian.active,
-#custom-scratchpad-telegram.active {
-    background-color: #64727D;
-    box-shadow: inset 0 -3px #ffffff;
-}
-
-/* Group spacing — match workspace button sizing and alignment */
-/* Grouped modules — same sizing as workspace buttons */
-#custom-workspace-ide,
-#custom-workspace-steam,
-#custom-scratchpad-music,
-#custom-scratchpad-messenger,
-#custom-scratchpad-obsidian,
-#custom-scratchpad-telegram,
-#custom-wallpaper-random,
-#custom-wallpaper-starred,
-#custom-wallpaper-star,
-#custom-wallpaper-trash,
-#custom-notification-history,
-#custom-notification-sound {
-    padding: 0 8px;
-}
-
-/* Scratchpad section separators */
-#custom-scratchpad-music {
-    margin-left: 8px;
-}
-
-#custom-scratchpad-obsidian {
-    margin-right: 8px;
-    margin-right: 4px;
-}
-
-/* Messenger & Telegram colors */
-#custom-scratchpad-telegram { color: #54a0e0; }
-#custom-scratchpad-telegram.has-notif { color: #7dc4ff; }
-#custom-scratchpad-messenger { color: #5ec4b6; }
-#custom-scratchpad-messenger.has-notif { color: #8eedd8; }
 
 /* Wallpaper controls */
 #custom-wallpaper-random,

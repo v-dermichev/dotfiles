@@ -4,12 +4,6 @@
     "spacing": 0,
     "modules-left": [
         "hyprland/workspaces",
-        "custom/workspace-ide",
-        "custom/workspace-steam",
-        "custom/scratchpad-music",
-        "custom/scratchpad-messenger",
-        "custom/scratchpad-telegram",
-        "custom/scratchpad-obsidian",
         "custom/layout",
         "custom/hypr-split"
     ],
@@ -39,7 +33,8 @@
     ],
     "hyprland/workspaces": {
         "persistent-workspaces": {
-            "8": []
+            "8": [],
+            "IDE": []
         },
         "format": "{icon}",
         "format-icons": {
@@ -52,9 +47,20 @@
             "7": "7",
             "8": "8",
             "9": "9",
+            "IDE": "󱃖",
+            "Steam": "󰓓",
+            "special:music": "󰎆",
+            "special:messenger": "",
+            "special:telegram": "󰒊",
+            "special:obsidian": "󱓧",
+            "music": "󰎇",
+            "messenger": "",
+            "telegram": "󰒊",
+            "obsidian": "󰹕",
             "default": "{name}"
         },
-        "ignore-workspaces": ["IDE", "Steam"]
+        "show-special": true,
+        "sort-by": "name"
     },
     "hyprland/window": {
         "max-length": 50
@@ -165,70 +171,28 @@
         "signal": 8,
         "on-click": "~/.config/waybar/scripts/hypr-split-toggle.sh"
     },
-    "custom/workspace-ide": {
-        "exec": "if [ \"$(hyprctl activeworkspace -j | jq -r '.name')\" = \"IDE\" ]; then echo '{\"text\": \"󱃖\", \"tooltip\": \"IDE (active)\", \"class\": \"active\"}'; else echo '{\"text\": \"󱃖\", \"tooltip\": \"IDE (Super+I)\", \"class\": \"inactive\"}'; fi",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 13,
-        "on-click": "~/.config/hypr/scripts/workspace-launch.sh IDE pycharm"
-    },
-    "custom/workspace-steam": {
-        "exec": "if [ \"$(hyprctl activeworkspace -j | jq -r '.name')\" = \"Steam\" ]; then echo '{\"text\": \"󰓓\", \"tooltip\": \"Steam (active)\", \"class\": \"active\"}'; else echo '{\"text\": \"󰓓\", \"tooltip\": \"Steam (Super+G)\", \"class\": \"inactive\"}'; fi",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 13,
-        "on-click": "~/.config/hypr/scripts/workspace-launch.sh Steam steam"
-    },
-    "custom/scratchpad-music": {
-        "exec": "if hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:music'; then echo '{\"text\": \"󰎆\", \"tooltip\": \"Music (active)\", \"class\": \"active\"}'; else echo '{\"text\": \"󰎆\", \"tooltip\": \"Music (Super+Z)\", \"class\": \"inactive\"}'; fi",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 13,
-        "on-click": "hyprctl dispatch togglespecialworkspace music; pkill -RTMIN+13 waybar"
-    },
-    "custom/scratchpad-messenger": {
-        "exec": "C=$(cat /tmp/notif-counts/messenger 2>/dev/null || echo 0); ACTIVE='inactive'; hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:messenger' && ACTIVE='active'; if [ \"$C\" -gt 0 ] && [ \"$ACTIVE\" = 'inactive' ]; then echo '{\"text\": \"󰍡 '$C'\", \"tooltip\": \"Messenger ('$C' new)\", \"class\": \"has-notif\"}'; else echo '{\"text\": \"󰍡\", \"tooltip\": \"Messenger (Super+X)\", \"class\": \"'$ACTIVE'\"}'; fi",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 13,
-        "on-click": "echo 0 > /tmp/notif-counts/messenger; hyprctl dispatch togglespecialworkspace messenger; pkill -RTMIN+13 waybar"
-    },
-    "custom/scratchpad-obsidian": {
-        "exec": "if hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:obsidian'; then echo '{\"text\": \"󱓧\", \"tooltip\": \"Obsidian (active)\", \"class\": \"active\"}'; else echo '{\"text\": \"󱓧\", \"tooltip\": \"Obsidian (Super+N)\", \"class\": \"inactive\"}'; fi",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 13,
-        "on-click": "hyprctl dispatch togglespecialworkspace obsidian; pkill -RTMIN+13 waybar"
-    },
-    "custom/scratchpad-telegram": {
-        "exec": "C=$(cat /tmp/notif-counts/telegram 2>/dev/null || echo 0); ACTIVE='inactive'; hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:telegram' && ACTIVE='active'; if [ \"$C\" -gt 0 ] && [ \"$ACTIVE\" = 'inactive' ]; then echo '{\"text\": \"󰍡 '$C'\", \"tooltip\": \"Telegram ('$C' new)\", \"class\": \"has-notif\"}'; else echo '{\"text\": \"󰍡\", \"tooltip\": \"Telegram (Super+V)\", \"class\": \"'$ACTIVE'\"}'; fi",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 13,
-        "on-click": "echo 0 > /tmp/notif-counts/telegram; hyprctl dispatch togglespecialworkspace telegram; pkill -RTMIN+13 waybar"
-    },
     "custom/wallpaper-random": {
         "format": "󰒟󰋩",
         "tooltip-format": "Random wallpaper",
-        "on-click": "~/.config/hypr/scripts/wallpaper-random.sh"
+        "on-click": "wproulette random; pkill -RTMIN+11 waybar"
     },
     "custom/wallpaper-starred": {
         "format": "󰒟󰓎",
         "tooltip-format": "Random from starred",
-        "on-click": "~/.config/hypr/scripts/wallpaper-starred.sh"
+        "on-click": "wproulette starred; pkill -RTMIN+11 waybar"
     },
     "custom/wallpaper-star": {
-        "exec": "if [ -f /tmp/current-wallpaper ] && grep -qxF \"$(cat /tmp/current-wallpaper)\" ~/Pictures/Wallpapers/.starred 2>/dev/null; then echo '{\"text\": \"󰓎\", \"tooltip\": \"Starred\", \"class\": \"starred\"}'; else echo '{\"text\": \"󰓎\", \"tooltip\": \"Not starred\", \"class\": \"unstarred\"}'; fi",
+        "exec": "wproulette status star",
         "return-type": "json",
         "interval": "once",
         "signal": 11,
-        "on-click": "~/.config/hypr/scripts/wallpaper-star.sh"
+        "on-click": "wproulette star; pkill -RTMIN+11 waybar"
     },
     "custom/wallpaper-trash": {
-        "exec": "if [ -f /tmp/current-wallpaper ] && grep -qxF \"$(cat /tmp/current-wallpaper)\" ~/Pictures/Wallpapers/.starred 2>/dev/null; then echo '{\"text\": \"󰩹\", \"tooltip\": \"Unstar first to trash\", \"class\": \"disabled\"}'; else echo '{\"text\": \"󰩹\", \"tooltip\": \"Trash wallpaper\", \"class\": \"enabled\"}'; fi",
+        "exec": "wproulette status trash",
         "return-type": "json",
         "interval": "once",
         "signal": 11,
-        "on-click": "grep -qxF \"$(cat /tmp/current-wallpaper 2>/dev/null)\" ~/Pictures/Wallpapers/.starred 2>/dev/null || ~/.config/hypr/scripts/wallpaper-trash.sh"
+        "on-click": "wproulette trash; pkill -RTMIN+11 waybar"
     }
 }
