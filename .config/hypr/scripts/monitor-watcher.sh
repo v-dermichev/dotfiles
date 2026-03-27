@@ -8,8 +8,11 @@ INT="${HYPR_INTERNAL:-eDP-1}"
 EXT="${HYPR_EXTERNAL:-HDMI-A-1}"
 MODE="${HYPR_INTERNAL_MODE:-1920x1080@144}"
 
+PAUSE_FILE="/tmp/monitor-watcher-paused"
+
 handle_monitor_change() {
     sleep 0.5
+    [ -f "$PAUSE_FILE" ] && return
     if hyprctl monitors | grep -q "$EXT"; then
         hyprctl keyword monitor "$INT, disable"
     else

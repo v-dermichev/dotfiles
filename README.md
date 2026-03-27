@@ -56,7 +56,10 @@ pacman -S mission-center
 pacman -S wl-clipboard cliphist
 
 # Fonts
-pacman -S ttf-jetbrains-mono-nerd
+pacman -S ttf-jetbrains-mono-nerd noto-fonts-emoji
+
+# Config watcher
+pacman -S inotify-tools
 
 # NVIDIA (skip if not using NVIDIA)
 pacman -S nvidia-open-dkms nvidia-utils
@@ -77,7 +80,12 @@ pacman -S kitty
 pacman -S brightnessctl network-manager-applet gnome-keyring
 ```
 
-> **Hardware-specific:** Edit `hyprland.conf` monitor names (`eDP-1`, `HDMI-A-1`) and resolutions to match your hardware. Run `hyprctl monitors` to see available outputs.
+> **Hardware-specific:** Edit variables at the top of `hyprland.conf` to match your hardware:
+> - `$internal` / `$external` — monitor names (run `hyprctl monitors` to find yours)
+> - `$internalMode` / `$externalMode` — resolutions and refresh rates
+> - `$btDevices` — bluetooth MAC address(es), space-separated
+> - `$screenshotDir` — where screenshots and recordings are saved
+> - `$activeOpacity` / `$inactiveOpacity` — window transparency levels
 
 ### System config (not in dotfiles)
 
@@ -131,6 +139,20 @@ ReconnectIntervals=1,2,4,8,16,32,64
 ```
 Add your user to the `audio` group: `gpasswd -a $USER audio`
 
+### Scratchpads & Named Workspaces
+
+Configured via simple pipe-delimited files — edit and save, changes auto-apply:
+
+- **`~/.config/hypr/scratchpads.conf`** — toggle-overlay apps (format: `name|key|command|icon|color|notify_match`)
+- **`~/.config/hypr/workspaces.conf`** — dedicated app workspaces (format: `name|key|command|icon|class_pattern|fullscreen`)
+- **`~/.config/hypr/theme.conf`** — shared theme variables (notification badge glyph, etc.)
+
+A config watcher (`config-watcher.sh`) monitors these files, regenerates Hyprland binds + window rules, assembles the waybar config from `config.template.jsonc` + generated fragments, and reloads waybar — all in the background with no screen flicker.
+
+Notification badges are configured per-scratchpad via the `notify_match` field — comma-separated D-Bus app name prefixes (e.g. `Telegram Desktop,org.telegram`). The badge indicator glyph is configurable in `theme.conf`.
+
+All changes apply immediately — no session restart needed.
+
 ### Wallpaper Roulette
 
 Waybar includes 4 wallpaper controls (left to right):
@@ -149,6 +171,7 @@ State is stored in `~/Pictures/Wallpapers/.starred` (list of paths) and `.trash/
 - `.zprofile` starts pipewire before Hyprland so all apps have audio immediately
 - The `--systemd` flag in `dbus-update-activation-environment` is misleadingly named — it just exports env vars to the D-Bus activation environment, works with elogind, no systemd required
 - NVIDIA runtime PM script paths (`0000:01:00.0`, `ADP1`) are hardware-specific — adjust for your system
+- Arch `extra` repo is disabled by default to avoid pulling systemd dependencies. Use `pacman-arch` alias when you need Arch packages. `artix-archlinux-support` provides virtual `systemd`/`systemd-libs` packages for compatibility
 
 ### Common Problems
 
@@ -163,5 +186,9 @@ State is stored in `~/Pictures/Wallpapers/.starred` (list of paths) and `.trash/
 **No notification sounds** — Mako doesn't play sounds. The included `notification-sound.sh` script handles this via D-Bus monitoring. Toggle on/off via the bell icon in waybar.
 
 **Bluetooth headset won't auto-connect at boot** — The included `bt-autoconnect.sh` handles this. Set `$btDevices` in `hyprland.conf` to your device MAC(s). Sony/similar headsets need the host to initiate — BlueZ `AutoEnable` alone isn't enough.
+
+**Brave password autofill not working** — Known bug in Brave 1.88.x/Chromium 146 on Wayland ([#50882](https://github.com/brave/brave-browser/issues/50882)). Fix: add `--enable-features=UseOzonePlatform` and `--ozone-platform=x11` to `~/.config/brave-flags.conf`.
+
+**Waybar high CPU usage** — Custom modules polling every second cause CPU spikes. Fixed by replacing `interval: 1` with event-driven `workspace-watcher.sh` that signals waybar only on workspace changes.
 
 **Internal monitor keeps re-enabling** — `hyprctl keyword monitor` is a runtime override that doesn't survive DPMS/suspend cycles. The included `monitor-watcher.sh` listens to Hyprland events and re-enforces the disable.
