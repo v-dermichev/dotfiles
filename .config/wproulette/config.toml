@@ -1,0 +1,4 @@
+wallpaper_dir = "~/Pictures/Wallpapers"
+transition_type = "fade"
+transition_duration = 1.0
+badge = "●"
