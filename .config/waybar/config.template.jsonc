@@ -1,0 +1,190 @@
+{
+    "layer": "top",
+    "height": 30,
+    "spacing": 0,
+    "modules-left": [
+        "hyprland/workspaces",
+        {{WORKSPACE_MODULES}}
+        {{SCRATCHPAD_MODULES}}
+        "custom/layout",
+        "custom/hypr-split"
+    ],
+    "modules-center": [
+        "hyprland/window"
+    ],
+    "modules-right": [
+        "custom/wallpaper-random",
+        "custom/wallpaper-trash",
+        "custom/wallpaper-star",
+        "custom/wallpaper-starred",
+        "custom/notification-history",
+        "custom/notification-sound",
+        "custom/opacity",
+        // "bluetooth",
+        "pulseaudio",
+        // "network",
+        // "cpu",
+        // "memory",
+        // "temperature",
+        // "backlight",
+        "hyprland/language",
+        // "battery",
+        "clock",
+        "tray",
+        "custom/power"
+    ],
+    "hyprland/workspaces": {
+        "persistent-workspaces": {
+            "8": []
+        },
+        "format": "{icon}",
+        "format-icons": {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "default": "{name}"
+        },
+        "ignore-workspaces": [{{WORKSPACE_NAMES}}]
+    },
+    "hyprland/window": {
+        "max-length": 50
+    },
+    "hyprland/language": {
+        "format": "󰌌 {}",
+        "format-en": "EN",
+        "format-ru": "RU"
+    },
+    "tray": {
+        "icon-size": 18,
+        "spacing": 10
+    },
+    "clock": {
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+        "format": "󰥔 {:%H:%M}",
+        "format-alt": "󰃭 {:%Y-%m-%d}"
+    },
+    "cpu": {
+        "format": "󰍛 {usage}%",
+        "tooltip": false
+    },
+    "memory": {
+        "format": "󰘚 {}%"
+    },
+    "temperature": {
+        "critical-threshold": 80,
+        "format": "{icon} {temperatureC}°C",
+        "format-icons": ["󱃃", "󰔏", "󱃂"]
+    },
+    "backlight": {
+        "format": "󰃟 {percent}%"
+    },
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}",
+        "format-full": "󰁹 {capacity}%",
+        "format-charging": "󰂄 {capacity}%",
+        "format-plugged": "󰚥 {capacity}%",
+        "format-alt": "󰁿 {time}",
+        "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁹"]
+    },
+    "network": {
+        "format-wifi": "󰤨 {essid} ({signalStrength}%)",
+        "format-ethernet": "󰈀 {ipaddr}/{cidr}",
+        "tooltip-format": "󰛳 {ifname} via {gwaddr}",
+        "format-linked": "󰈁 {ifname} (No IP)",
+        "format-disconnected": "󰤭 Disconnected",
+        "format-alt": "󰛳 {ifname}: {ipaddr}/{cidr}"
+    },
+    "bluetooth": {
+        "format": "󰂯 {status}",
+        "format-connected": "󰂱 {device_alias}",
+        "on-click": "blueman-manager"
+    },
+    "pulseaudio": {
+        "format": "{icon} {volume}% {format_source}",
+        "format-bluetooth": "󰂰 {volume}% {format_source}",
+        "format-bluetooth-muted": "󰂲 {format_source}",
+        "format-muted": "󰝟 {format_source}",
+        "format-source": "󰍬 {volume}%",
+        "format-source-muted": "󰍭",
+        "format-icons": {
+            "headphone": "󰋋",
+            "hands-free": "󰋎",
+            "headset": "󰋎",
+            "default": ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "pavucontrol"
+    },
+    "custom/power": {
+        "format": "󰐥",
+        "tooltip-format": "Power menu",
+        "on-click": "echo -e 'Shutdown\\nReboot\\nSuspend' | ~/.config/hypr/scripts/wofi-wrapper.sh dmenu --prompt 'Power' | xargs -I {} bash -c 'case {} in Shutdown) loginctl poweroff;; Reboot) loginctl reboot;; Suspend) loginctl suspend;; esac'"
+    },
+    "custom/layout": {
+        "exec": "layout=$(hyprctl getoption general:layout -j | jq -r '.str'); if [ \"$layout\" = \"dwindle\" ]; then echo '{\"text\": \"󰕰\", \"tooltip\": \"Layout: dwindle\", \"class\": \"dwindle\"}'; else echo '{\"text\": \"󰕫\", \"tooltip\": \"Layout: master\", \"class\": \"master\"}'; fi",
+        "return-type": "json",
+        "interval": 2,
+        "on-click": "hyprctl keyword general:layout \"$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle)\""
+    },
+    "custom/notification-history": {
+        "format": "󰋚",
+        "tooltip-format": "Notification history",
+        "on-click": "~/.config/hypr/scripts/notification-history.sh"
+    },
+    "custom/notification-sound": {
+        "exec": "if [ -f /tmp/notification-sound-enabled ] && [ \"$(cat /tmp/notification-sound-enabled)\" = \"1\" ]; then echo '{\"text\": \"󰂚\", \"tooltip\": \"Notification sounds: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂛\", \"tooltip\": \"Notification sounds: OFF\", \"class\": \"off\"}'; fi",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 9,
+        "on-click": "if [ \"$(cat /tmp/notification-sound-enabled)\" = \"1\" ]; then echo 0 > /tmp/notification-sound-enabled; else echo 1 > /tmp/notification-sound-enabled; fi; pkill -RTMIN+9 waybar"
+    },
+    "custom/opacity": {
+        "exec": "if [ -f /tmp/opacity-enabled ] && [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo '{\"text\": \"󰂵\", \"tooltip\": \"Transparency: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂶\", \"tooltip\": \"Transparency: OFF\", \"class\": \"off\"}'; fi",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 10,
+        "on-click": "if [ ! -f /tmp/opacity-enabled ] || [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo 0 > /tmp/opacity-enabled; hyprctl keyword decoration:active_opacity 1.0; hyprctl keyword decoration:inactive_opacity 1.0; else echo 1 > /tmp/opacity-enabled; hyprctl keyword decoration:active_opacity $HYPR_ACTIVE_OPACITY; hyprctl keyword decoration:inactive_opacity $HYPR_INACTIVE_OPACITY; fi; pkill -RTMIN+10 waybar"
+    },
+    "custom/hypr-split": {
+        "exec": "~/.config/waybar/scripts/hypr-split-status.sh",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 8,
+        "on-click": "~/.config/waybar/scripts/hypr-split-toggle.sh"
+    },
+    {{WORKSPACE_DEFS}}
+    {{SCRATCHPAD_DEFS}}
+    "custom/wallpaper-random": {
+        "format": "󰒟󰋩",
+        "tooltip-format": "Random wallpaper",
+        "on-click": "~/.config/hypr/scripts/wallpaper-random.sh"
+    },
+    "custom/wallpaper-starred": {
+        "format": "󰒟󰓎",
+        "tooltip-format": "Random from starred",
+        "on-click": "~/.config/hypr/scripts/wallpaper-starred.sh"
+    },
+    "custom/wallpaper-star": {
+        "exec": "if [ -f /tmp/current-wallpaper ] && grep -qxF \"$(cat /tmp/current-wallpaper)\" ~/Pictures/Wallpapers/.starred 2>/dev/null; then echo '{\"text\": \"󰓎\", \"tooltip\": \"Starred\", \"class\": \"starred\"}'; else echo '{\"text\": \"󰓎\", \"tooltip\": \"Not starred\", \"class\": \"unstarred\"}'; fi",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 11,
+        "on-click": "~/.config/hypr/scripts/wallpaper-star.sh"
+    },
+    "custom/wallpaper-trash": {
+        "exec": "if [ -f /tmp/current-wallpaper ] && grep -qxF \"$(cat /tmp/current-wallpaper)\" ~/Pictures/Wallpapers/.starred 2>/dev/null; then echo '{\"text\": \"󰩹\", \"tooltip\": \"Unstar first to trash\", \"class\": \"disabled\"}'; else echo '{\"text\": \"󰩹\", \"tooltip\": \"Trash wallpaper\", \"class\": \"enabled\"}'; fi",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 11,
+        "on-click": "grep -qxF \"$(cat /tmp/current-wallpaper 2>/dev/null)\" ~/Pictures/Wallpapers/.starred 2>/dev/null || ~/.config/hypr/scripts/wallpaper-trash.sh"
+    }
+}

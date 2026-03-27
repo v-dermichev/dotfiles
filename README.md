@@ -58,6 +58,9 @@ pacman -S wl-clipboard cliphist
 # Fonts
 pacman -S ttf-jetbrains-mono-nerd noto-fonts-emoji
 
+# Config watcher
+pacman -S inotify-tools
+
 # NVIDIA (skip if not using NVIDIA)
 pacman -S nvidia-open-dkms nvidia-utils
 
@@ -135,6 +138,17 @@ ReconnectIntervals=1,2,4,8,16,32,64
 @audio - memlock unlimited
 ```
 Add your user to the `audio` group: `gpasswd -a $USER audio`
+
+### Scratchpads & Named Workspaces
+
+Configured via simple pipe-delimited files — edit and save, changes auto-apply:
+
+- **`~/.config/hypr/scratchpads.conf`** — toggle-overlay apps (format: `name|key|command|icon|color`)
+- **`~/.config/hypr/workspaces.conf`** — dedicated app workspaces (format: `name|key|command|icon|class_pattern|fullscreen`)
+
+A config watcher (`config-watcher.sh`) monitors these files, regenerates Hyprland binds + window rules, assembles the waybar config from `config.template.jsonc` + generated fragments, and reloads waybar — all in the background with no screen flicker.
+
+Keybind changes require a session restart. Waybar/window rule changes apply immediately.
 
 ### Wallpaper Roulette
 
