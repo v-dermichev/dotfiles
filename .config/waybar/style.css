@@ -42,8 +42,16 @@ window#waybar.hidden {
     color: #7dc4ff;
 }
 
-/* Special workspace buttons — wider padding */
-#workspaces button.special { padding: 0 8px; }
+/* Special workspace buttons */
+#workspaces button.special {
+    padding: 0 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+}
+
+#workspaces button.special.active {
+    color: #ffffff;
+}
 
 /* Per-workspace colors */
 #workspaces button.telegram { color: #54a0e0; }

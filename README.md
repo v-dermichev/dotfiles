@@ -58,8 +58,6 @@ pacman -S wl-clipboard cliphist
 # Fonts
 pacman -S ttf-jetbrains-mono-nerd noto-fonts-emoji
 
-# Config watcher
-pacman -S inotify-tools
 
 # NVIDIA (skip if not using NVIDIA)
 pacman -S nvidia-open-dkms nvidia-utils
@@ -144,17 +142,12 @@ Add your user to the `audio` group: `gpasswd -a $USER audio`
 
 ### Scratchpads & Named Workspaces
 
-Configured via simple pipe-delimited files — edit and save, changes auto-apply:
+All workspaces use waybar's native `hyprland/workspaces` module — no custom modules or generators needed.
 
-- **`~/.config/hypr/scratchpads.conf`** — toggle-overlay apps (format: `name|key|command|icon|color|notify_match`)
-- **`~/.config/hypr/workspaces.conf`** — dedicated app workspaces (format: `name|key|command|icon|class_pattern|fullscreen`)
-- **`~/.config/hypr/theme.conf`** — shared theme variables (notification badge glyph, etc.)
-
-A config watcher (`config-watcher.sh`) monitors these files, regenerates Hyprland binds + window rules, assembles the waybar config from `config.template.jsonc` + generated fragments, and reloads waybar — all in the background with no screen flicker.
-
-Notification badges are configured per-scratchpad via the `notify_match` field — comma-separated D-Bus app name prefixes (e.g. `Telegram Desktop,org.telegram`). The badge indicator glyph is configurable in `theme.conf`.
-
-All changes apply immediately — no session restart needed.
+- **Scratchpads** — toggle-overlay apps defined in `hyprland.conf` with `workspace = special:name, on-created-empty:command`
+- **Named workspaces** — dedicated app workspaces (IDE, Steam) with `workspace-launch.sh` for launch-on-first-visit
+- **Icons** — configured via waybar's `format-icons` mapping workspace names to nerd font glyphs
+- **Notifications** — apps like Telegram set the WM urgent hint natively, waybar highlights with `.urgent` CSS class (blue tint)
 
 ### Wallpaper Roulette
 
@@ -195,7 +188,5 @@ Config and state in `~/.config/wproulette/` — wallpaper directory, transition 
 **Bluetooth headset won't auto-connect at boot** — The included `bt-autoconnect.sh` handles this. Set `$btDevices` in `hyprland.conf` to your device MAC(s). Sony/similar headsets need the host to initiate — BlueZ `AutoEnable` alone isn't enough.
 
 **Brave password autofill not working** — Known bug in Brave 1.88.x/Chromium 146 on Wayland ([#50882](https://github.com/brave/brave-browser/issues/50882)). Fix: add `--enable-features=UseOzonePlatform` and `--ozone-platform=x11` to `~/.config/brave-flags.conf`.
-
-**Waybar high CPU usage** — Custom modules polling every second cause CPU spikes. Fixed by replacing `interval: 1` with event-driven `workspace-watcher.sh` that signals waybar only on workspace changes.
 
 **Internal monitor keeps re-enabling** — `hyprctl keyword monitor` is a runtime override that doesn't survive DPMS/suspend cycles. The included `monitor-watcher.sh` listens to Hyprland events and re-enforces the disable.
