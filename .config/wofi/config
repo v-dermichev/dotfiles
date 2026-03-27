@@ -5,3 +5,4 @@ prompt=
 allow_markup=true
 insensitive=true
 columns=1
+layer=overlay

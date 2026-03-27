@@ -21,6 +21,7 @@
         "custom/wallpaper-trash",
         "custom/wallpaper-star",
         "custom/wallpaper-starred",
+        "custom/notification-history",
         "custom/notification-sound",
         "custom/opacity",
         // "bluetooth",
@@ -130,13 +131,18 @@
     "custom/power": {
         "format": "󰐥",
         "tooltip-format": "Power menu",
-        "on-click": "wofi --show dmenu <<< $'Shutdown\\nReboot\\nSuspend' | xargs -I {} bash -c 'case {} in Shutdown) loginctl poweroff;; Reboot) loginctl reboot;; Suspend) loginctl suspend;; esac'"
+        "on-click": "echo -e 'Shutdown\\nReboot\\nSuspend' | ~/.config/hypr/scripts/wofi-wrapper.sh dmenu --prompt 'Power' | xargs -I {} bash -c 'case {} in Shutdown) loginctl poweroff;; Reboot) loginctl reboot;; Suspend) loginctl suspend;; esac'"
     },
     "custom/layout": {
         "exec": "layout=$(hyprctl getoption general:layout -j | jq -r '.str'); if [ \"$layout\" = \"dwindle\" ]; then echo '{\"text\": \"󰕰\", \"tooltip\": \"Layout: dwindle\", \"class\": \"dwindle\"}'; else echo '{\"text\": \"󰕫\", \"tooltip\": \"Layout: master\", \"class\": \"master\"}'; fi",
         "return-type": "json",
         "interval": 2,
         "on-click": "hyprctl keyword general:layout \"$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle)\""
+    },
+    "custom/notification-history": {
+        "format": "󰋚",
+        "tooltip-format": "Notification history",
+        "on-click": "~/.config/hypr/scripts/notification-history.sh"
     },
     "custom/notification-sound": {
         "exec": "if [ -f /tmp/notification-sound-enabled ] && [ \"$(cat /tmp/notification-sound-enabled)\" = \"1\" ]; then echo '{\"text\": \"󰂚\", \"tooltip\": \"Notification sounds: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂛\", \"tooltip\": \"Notification sounds: OFF\", \"class\": \"off\"}'; fi",
@@ -162,42 +168,44 @@
     "custom/workspace-ide": {
         "exec": "if [ \"$(hyprctl activeworkspace -j | jq -r '.name')\" = \"IDE\" ]; then echo '{\"text\": \"󱃖\", \"tooltip\": \"IDE (active)\", \"class\": \"active\"}'; else echo '{\"text\": \"󱃖\", \"tooltip\": \"IDE (Super+I)\", \"class\": \"inactive\"}'; fi",
         "return-type": "json",
-        "interval": 1,
+        "interval": "once",
+        "signal": 13,
         "on-click": "~/.config/hypr/scripts/workspace-launch.sh IDE pycharm"
     },
     "custom/workspace-steam": {
         "exec": "if [ \"$(hyprctl activeworkspace -j | jq -r '.name')\" = \"Steam\" ]; then echo '{\"text\": \"󰓓\", \"tooltip\": \"Steam (active)\", \"class\": \"active\"}'; else echo '{\"text\": \"󰓓\", \"tooltip\": \"Steam (Super+G)\", \"class\": \"inactive\"}'; fi",
         "return-type": "json",
-        "interval": 1,
+        "interval": "once",
+        "signal": 13,
         "on-click": "~/.config/hypr/scripts/workspace-launch.sh Steam steam"
     },
     "custom/scratchpad-music": {
         "exec": "if hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:music'; then echo '{\"text\": \"󰎆\", \"tooltip\": \"Music (active)\", \"class\": \"active\"}'; else echo '{\"text\": \"󰎆\", \"tooltip\": \"Music (Super+Z)\", \"class\": \"inactive\"}'; fi",
         "return-type": "json",
-        "interval": 1,
-        "signal": 12,
-        "on-click": "hyprctl dispatch togglespecialworkspace music; sleep 0.2; pkill -RTMIN+12 waybar"
+        "interval": "once",
+        "signal": 13,
+        "on-click": "hyprctl dispatch togglespecialworkspace music; sleep 0.2; pkill -RTMIN+13 waybar"
     },
     "custom/scratchpad-messenger": {
         "exec": "C=$(cat /tmp/notif-counts/messenger 2>/dev/null || echo 0); ACTIVE='inactive'; hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:messenger' && ACTIVE='active'; if [ \"$C\" -gt 0 ] && [ \"$ACTIVE\" = 'inactive' ]; then echo '{\"text\": \"󰍡 '$C'\", \"tooltip\": \"Messenger ('$C' new)\", \"class\": \"has-notif\"}'; else echo '{\"text\": \"󰍡\", \"tooltip\": \"Messenger (Super+X)\", \"class\": \"'$ACTIVE'\"}'; fi",
         "return-type": "json",
-        "interval": 1,
-        "signal": 12,
-        "on-click": "echo 0 > /tmp/notif-counts/messenger; hyprctl dispatch togglespecialworkspace messenger; sleep 0.2; pkill -RTMIN+12 waybar"
+        "interval": "once",
+        "signal": 13,
+        "on-click": "echo 0 > /tmp/notif-counts/messenger; hyprctl dispatch togglespecialworkspace messenger; sleep 0.2; pkill -RTMIN+13 waybar"
     },
     "custom/scratchpad-obsidian": {
         "exec": "if hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:obsidian'; then echo '{\"text\": \"󱓧\", \"tooltip\": \"Obsidian (active)\", \"class\": \"active\"}'; else echo '{\"text\": \"󱓧\", \"tooltip\": \"Obsidian (Super+N)\", \"class\": \"inactive\"}'; fi",
         "return-type": "json",
-        "interval": 1,
-        "signal": 12,
-        "on-click": "hyprctl dispatch togglespecialworkspace obsidian; sleep 0.2; pkill -RTMIN+12 waybar"
+        "interval": "once",
+        "signal": 13,
+        "on-click": "hyprctl dispatch togglespecialworkspace obsidian; sleep 0.2; pkill -RTMIN+13 waybar"
     },
     "custom/scratchpad-telegram": {
         "exec": "C=$(cat /tmp/notif-counts/telegram 2>/dev/null || echo 0); ACTIVE='inactive'; hyprctl monitors -j | jq -e '.[].specialWorkspace.name' -r 2>/dev/null | grep -q 'special:telegram' && ACTIVE='active'; if [ \"$C\" -gt 0 ] && [ \"$ACTIVE\" = 'inactive' ]; then echo '{\"text\": \"󰍡 '$C'\", \"tooltip\": \"Telegram ('$C' new)\", \"class\": \"has-notif\"}'; else echo '{\"text\": \"󰍡\", \"tooltip\": \"Telegram (Super+V)\", \"class\": \"'$ACTIVE'\"}'; fi",
         "return-type": "json",
-        "interval": 1,
-        "signal": 12,
-        "on-click": "echo 0 > /tmp/notif-counts/telegram; hyprctl dispatch togglespecialworkspace telegram; sleep 0.2; pkill -RTMIN+12 waybar"
+        "interval": "once",
+        "signal": 13,
+        "on-click": "echo 0 > /tmp/notif-counts/telegram; hyprctl dispatch togglespecialworkspace telegram; sleep 0.2; pkill -RTMIN+13 waybar"
     },
     "custom/wallpaper-random": {
         "format": "󰒟󰋩",

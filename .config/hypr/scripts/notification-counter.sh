@@ -16,13 +16,13 @@ dbus-monitor "interface='org.freedesktop.Notifications',member='Notify'" 2>/dev/
                     FILE="$COUNT_DIR/telegram"
                     COUNT=$(cat "$FILE" 2>/dev/null || echo 0)
                     echo $((COUNT + 1)) > "$FILE"
-                    pkill -RTMIN+12 waybar
+                    pkill -RTMIN+13 waybar
                     ;;
                 "Brave"*|"brave"*|"Chromium"*|"chromium"*)
                     FILE="$COUNT_DIR/messenger"
                     COUNT=$(cat "$FILE" 2>/dev/null || echo 0)
                     echo $((COUNT + 1)) > "$FILE"
-                    pkill -RTMIN+12 waybar
+                    pkill -RTMIN+13 waybar
                     ;;
             esac
         fi

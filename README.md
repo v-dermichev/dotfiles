@@ -154,6 +154,7 @@ State is stored in `~/Pictures/Wallpapers/.starred` (list of paths) and `.trash/
 - `.zprofile` starts pipewire before Hyprland so all apps have audio immediately
 - The `--systemd` flag in `dbus-update-activation-environment` is misleadingly named — it just exports env vars to the D-Bus activation environment, works with elogind, no systemd required
 - NVIDIA runtime PM script paths (`0000:01:00.0`, `ADP1`) are hardware-specific — adjust for your system
+- Arch `extra` repo is disabled by default to avoid pulling systemd dependencies. Use `pacman-arch` alias when you need Arch packages. `artix-archlinux-support` provides virtual `systemd`/`systemd-libs` packages for compatibility
 
 ### Common Problems
 
@@ -170,5 +171,7 @@ State is stored in `~/Pictures/Wallpapers/.starred` (list of paths) and `.trash/
 **Bluetooth headset won't auto-connect at boot** — The included `bt-autoconnect.sh` handles this. Set `$btDevices` in `hyprland.conf` to your device MAC(s). Sony/similar headsets need the host to initiate — BlueZ `AutoEnable` alone isn't enough.
 
 **Brave password autofill not working** — Known bug in Brave 1.88.x/Chromium 146 on Wayland ([#50882](https://github.com/brave/brave-browser/issues/50882)). Fix: add `--enable-features=UseOzonePlatform` and `--ozone-platform=x11` to `~/.config/brave-flags.conf`.
+
+**Waybar high CPU usage** — Custom modules polling every second cause CPU spikes. Fixed by replacing `interval: 1` with event-driven `workspace-watcher.sh` that signals waybar only on workspace changes.
 
 **Internal monitor keeps re-enabling** — `hyprctl keyword monitor` is a runtime override that doesn't survive DPMS/suspend cycles. The included `monitor-watcher.sh` listens to Hyprland events and re-enforces the disable.
