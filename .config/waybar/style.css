@@ -45,21 +45,26 @@ window#waybar.hidden {
 /* Special workspace buttons */
 #workspaces button.special {
     padding: 0 5px;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.25);
     font-size: 12px;
     box-shadow: inset 0 -3px rgba(255, 255, 255, 0.25);
+    transition-property: color;
+    transition-duration: .5s;
 }
 
 #workspaces button.special:hover {
-    background: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.2);
     box-shadow: inset 0 -3px #ffffff;
 }
 
-#workspaces button.special.active {
+#workspaces button.special.active, #workspaces button.special.focused {
     color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 -3px #ffffff;
 }
 
-/* Per-workspace colors */
+/* Per-workspace colors — waiting for waybar to add workspace name as CSS class */
+/* See: https://github.com/Alexays/Waybar/discussions/2696 */
 #workspaces button.telegram { color: #54a0e0; }
 #workspaces button.messenger { color: #5ec4b6; }
 #workspaces button.starred { color: #d4a84b; }
