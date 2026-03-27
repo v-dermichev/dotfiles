@@ -166,25 +166,25 @@
     "custom/wallpaper-random": {
         "format": "󰒟󰋩",
         "tooltip-format": "Random wallpaper",
-        "on-click": "~/.config/hypr/scripts/wallpaper-random.sh"
+        "on-click": "wproulette random; pkill -RTMIN+11 waybar"
     },
     "custom/wallpaper-starred": {
         "format": "󰒟󰓎",
         "tooltip-format": "Random from starred",
-        "on-click": "~/.config/hypr/scripts/wallpaper-starred.sh"
+        "on-click": "wproulette starred; pkill -RTMIN+11 waybar"
     },
     "custom/wallpaper-star": {
-        "exec": "if [ -f /tmp/current-wallpaper ] && grep -qxF \"$(cat /tmp/current-wallpaper)\" ~/Pictures/Wallpapers/.starred 2>/dev/null; then echo '{\"text\": \"󰓎\", \"tooltip\": \"Starred\", \"class\": \"starred\"}'; else echo '{\"text\": \"󰓎\", \"tooltip\": \"Not starred\", \"class\": \"unstarred\"}'; fi",
+        "exec": "wproulette status star",
         "return-type": "json",
         "interval": "once",
         "signal": 11,
-        "on-click": "~/.config/hypr/scripts/wallpaper-star.sh"
+        "on-click": "wproulette star; pkill -RTMIN+11 waybar"
     },
     "custom/wallpaper-trash": {
-        "exec": "if [ -f /tmp/current-wallpaper ] && grep -qxF \"$(cat /tmp/current-wallpaper)\" ~/Pictures/Wallpapers/.starred 2>/dev/null; then echo '{\"text\": \"󰩹\", \"tooltip\": \"Unstar first to trash\", \"class\": \"disabled\"}'; else echo '{\"text\": \"󰩹\", \"tooltip\": \"Trash wallpaper\", \"class\": \"enabled\"}'; fi",
+        "exec": "wproulette status trash",
         "return-type": "json",
         "interval": "once",
         "signal": 11,
-        "on-click": "grep -qxF \"$(cat /tmp/current-wallpaper 2>/dev/null)\" ~/Pictures/Wallpapers/.starred 2>/dev/null || ~/.config/hypr/scripts/wallpaper-trash.sh"
+        "on-click": "wproulette trash; pkill -RTMIN+11 waybar"
     }
 }
