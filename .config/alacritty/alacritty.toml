@@ -1,0 +1,67 @@
+[window]
+dimensions = { columns = 200, lines = 50 }
+dynamic_padding = true
+decorations = "None"
+opacity = 0.8
+blur = true
+
+[font]
+size = 10.0
+
+[font.normal]
+family = "JetBrainsMono Nerd Font Mono"
+style = "Regular"
+
+[font.bold]
+style = "Bold"
+
+[font.italic]
+style = "Italic"
+
+[font.bold_italic]
+style = "Bold Italic"
+
+[cursor]
+style = { shape = "Block", blinking = "Never" }
+
+[bell]
+animation = "EaseOutExpo"
+duration = 0
+
+[keyboard]
+bindings = [
+    { key = "Slash", mods = "Control", chars = "\u001F" },
+]
+
+# Cyberdream theme
+[colors.primary]
+background = "#000000"
+foreground = "#ffffff"
+
+[colors.cursor]
+text = "#16181a"
+cursor = "#ffffff"
+
+[colors.selection]
+text = "#ffffff"
+background = "#3c4048"
+
+[colors.normal]
+black   = "#16181a"
+red     = "#ff6e5e"
+green   = "#5eff6c"
+yellow  = "#f1ff5e"
+blue    = "#5ea1ff"
+magenta = "#bd5eff"
+cyan    = "#5ef1ff"
+white   = "#ffffff"
+
+[colors.bright]
+black   = "#8D96A0"
+red     = "#ff6e5e"
+green   = "#5eff6c"
+yellow  = "#f1ff5e"
+blue    = "#5ea1ff"
+magenta = "#bd5eff"
+cyan    = "#5ef1ff"
+white   = "#ffffff"

@@ -1,60 +1,45 @@
--- Pull in the wezterm AP-- Initialize Configuration
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
-local opacity = 0.96
-local transparent_bg = "rgba(22, 24, 26, " .. opacity .. ")"
 
---- Get the current operating system
---- @return "windows"| "linux" | "macos"
-local function get_os()
-    local bin_format = package.cpath:match("%p[\\|/]?%p(%a+)")
-    if bin_format == "dll" then
-        return "windows"
-    elseif bin_format == "so" then
-        return "linux"
-    end
-
-    return "macos"
-end
-
-local host_os = get_os()
-
--- Font Configuration
-local emoji_font = "Segoe UI Emoji"
+-- Font
 config.font = wezterm.font_with_fallback({
-    {
-        family = "JetBrainsMono Nerd Font",
-        weight = "Regular",
-    },
-    emoji_font,
+    { family = "JetBrainsMono Nerd Font", weight = "Regular" },
+    "Noto Color Emoji",
 })
 config.font_size = 10
 
--- Color Configuration
+-- Colors
 config.colors = require("cyberdream")
 config.force_reverse_video_cursor = true
 
--- Window Configuration
-config.initial_rows = 54
-config.initial_cols = 225
-config.window_decorations = "RESIZE"
-config.window_background_opacity = opacity
-config.window_background_image = (os.getenv("WEZTERM_CONFIG_FILE") or ""):gsub("wezterm.lua", "bg-blurred.png")
+-- Window
+config.initial_rows = 50
+config.initial_cols = 200
+config.window_decorations = "NONE"
+config.window_background_opacity = 0.7
 config.window_close_confirmation = "NeverPrompt"
-config.win32_system_backdrop = "Acrylic"
+config.front_end = "WebGpu"
 
--- Performance Settings
-config.max_fps = 144
-config.animation_fps = 60
-config.cursor_blink_rate = 250
+-- Cursor
+config.cursor_blink_rate = 0
 
--- Tab Bar Configuration
+-- Bell — trigger window urgency
+config.audible_bell = "Disabled"
+config.visual_bell = {
+    target = "CursorColor",
+    fade_in_duration_ms = 0,
+    fade_out_duration_ms = 0,
+}
+
+-- Tab Bar
 config.enable_tab_bar = true
 config.hide_tab_bar_if_only_one_tab = true
 config.show_tab_index_in_tab_bar = false
 config.use_fancy_tab_bar = false
+
+local transparent_bg = "rgba(22, 24, 26, 0.8)"
 config.colors.tab_bar = {
-    background = config.window_background_image and "rgba(0, 0, 0, 0)" or transparent_bg,
+    background = transparent_bg,
     new_tab = { fg_color = config.colors.background, bg_color = config.colors.brights[6] },
     new_tab_hover = { fg_color = config.colors.background, bg_color = config.colors.foreground },
 }
@@ -85,34 +70,12 @@ wezterm.on("format-tab-title", function(tab, _, _, _, hover)
 end)
 
 -- Keybindings
--- config.keys = {
-    -- { key = "v", mods = "CTRL", action = wezterm.action({ PasteFrom = "Clipboard" }) },
--- }
-
 config.keys = {
-  {
-    key = "/",
-    mods = "CTRL",
-    action = wezterm.action.SendString("\x1f"),
-  },
-  {
-    key = "Enter",
-    mods = "ALT",
-    action = wezterm.action.DisableDefaultAssignment,
-  }
+    { key = "/", mods = "CTRL", action = wezterm.action.SendString("\x1f") },
+    { key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
 }
 
--- Default Shell Configuration
-config.default_prog = { "zsh", "-NoLogo" }
-
--- OS-Specific Overrides
-if host_os == "linux" then
-    emoji_font = "Noto Color Emoji"
-    config.default_prog = { "zsh" }
-    config.front_end = "WebGpu"
-    config.window_background_image = os.getenv("HOME") .. "/.config/wezterm/bg-blurred.png"
-    config.window_decorations = nil -- use system decorations
-end
+-- Shell
+config.default_prog = { "zsh" }
 
 return config
-

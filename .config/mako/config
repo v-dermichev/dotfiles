@@ -15,6 +15,7 @@ max-icon-size=48
 icon-border-radius=5
 layer=overlay
 anchor=top-right
+on-notify=exec canberra-gtk-play -i complete
 
 [urgency=low]
 background-color=#2b303bAA
@@ -24,3 +25,10 @@ border-color=#64727DAA
 background-color=#f53c3c66
 border-color=#f53c3cCC
 default-timeout=10000
+
+[mode=silent]
+on-notify=none
+
+[mode=do-not-disturb]
+invisible=1
+on-notify=none

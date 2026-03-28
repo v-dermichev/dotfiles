@@ -17,6 +17,7 @@
         "custom/wallpaper-starred",
         "custom/notification-history",
         "custom/notification-sound",
+        "custom/notification-dnd",
         "custom/opacity",
         // "bluetooth",
         "pulseaudio",
@@ -151,11 +152,18 @@
         "on-click": "~/.config/hypr/scripts/notification-history.sh"
     },
     "custom/notification-sound": {
-        "exec": "if [ -f /tmp/notification-sound-enabled ] && [ \"$(cat /tmp/notification-sound-enabled)\" = \"1\" ]; then echo '{\"text\": \"󰂚\", \"tooltip\": \"Notification sounds: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂛\", \"tooltip\": \"Notification sounds: OFF\", \"class\": \"off\"}'; fi",
+        "exec": "MODE=$(makoctl mode); if echo $MODE | grep -qE 'silent|do-not-disturb'; then echo '{\"text\": \"󰂛\", \"tooltip\": \"Sounds: OFF\", \"class\": \"off\"}'; else echo '{\"text\": \"󰂚\", \"tooltip\": \"Sounds: ON\", \"class\": \"on\"}'; fi",
         "return-type": "json",
         "interval": "once",
         "signal": 9,
-        "on-click": "if [ \"$(cat /tmp/notification-sound-enabled)\" = \"1\" ]; then echo 0 > /tmp/notification-sound-enabled; else echo 1 > /tmp/notification-sound-enabled; fi; pkill -RTMIN+9 waybar"
+        "on-click": "makoctl mode -t silent; pkill -RTMIN+9 waybar"
+    },
+    "custom/notification-dnd": {
+        "exec": "MODE=$(makoctl mode); if echo $MODE | grep -q do-not-disturb; then echo '{\"text\": \"󰍷\", \"tooltip\": \"DND: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰍶\", \"tooltip\": \"DND: OFF\", \"class\": \"off\"}'; fi",
+        "return-type": "json",
+        "interval": "once",
+        "signal": 9,
+        "on-click": "makoctl mode -t do-not-disturb; pkill -RTMIN+9 waybar"
     },
     "custom/opacity": {
         "exec": "if [ -f /tmp/opacity-enabled ] && [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo '{\"text\": \"󰂵\", \"tooltip\": \"Transparency: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂶\", \"tooltip\": \"Transparency: OFF\", \"class\": \"off\"}'; fi",

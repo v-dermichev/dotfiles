@@ -183,7 +183,7 @@ Config and state in `~/.config/wproulette/` — wallpaper directory, transition 
 
 **Chromium won't start** — Stale `SingletonLock` file from a crash. Remove `~/.config/chromium/SingletonLock`.
 
-**No notification sounds** — Mako doesn't play sounds. The included `notification-sound.sh` script handles this via D-Bus monitoring. Toggle on/off via the bell icon in waybar.
+**No notification sounds** — Add `on-notify=exec canberra-gtk-play -i complete` to mako config. Toggle sound mute via waybar bell icon (`makoctl mode -t silent`). DND mode suppresses both sound and visual notifications (`makoctl mode -t do-not-disturb`).
 
 **Bluetooth headset won't auto-connect at boot** — The included `bt-autoconnect.sh` handles this. Set `$btDevices` in `hyprland.conf` to your device MAC(s). Sony/similar headsets need the host to initiate — BlueZ `AutoEnable` alone isn't enough.
 
