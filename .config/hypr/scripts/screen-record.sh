@@ -8,9 +8,10 @@ PID_FILE="/tmp/screen-record-pid"
 OUTPUT_DIR="$HOME/Screenshots"
 mkdir -p "$OUTPUT_DIR"
 
-if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+PID=$(cat "$PID_FILE" 2>/dev/null)
+if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
     # Stop recording
-    kill -INT "$(cat "$PID_FILE")"
+    kill -INT "$PID"
     rm "$PID_FILE"
     notify-send "Recording" "Saved to $OUTPUT_DIR"
 
