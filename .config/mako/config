@@ -16,6 +16,11 @@ icon-border-radius=5
 layer=overlay
 anchor=top-right
 on-notify=exec canberra-gtk-play -i complete
+[app-name="Telegram Desktop"]
+on-button-left=exec hyprctl dispatch togglespecialworkspace telegram; makoctl dismiss -n "$id"
+
+[body~="messenger.360.yandex.com"]
+on-button-left=exec hyprctl dispatch togglespecialworkspace messenger; makoctl dismiss -n "$id"
 
 [urgency=low]
 background-color=#2b303bAA

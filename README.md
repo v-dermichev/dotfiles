@@ -185,6 +185,16 @@ Config and state in `~/.config/wproulette/` — wallpaper directory, transition 
 
 **No notification sounds** — Add `on-notify=exec canberra-gtk-play -i complete` to mako config. Toggle sound mute via waybar bell icon (`makoctl mode -t silent`). DND mode suppresses both sound and visual notifications (`makoctl mode -t do-not-disturb`).
 
+**Clicking notification doesn't focus app** — Add per-app criteria in mako config to switch workspaces on click:
+```ini
+[app-name="Telegram Desktop"]
+on-button-left=exec hyprctl dispatch togglespecialworkspace telegram; makoctl dismiss -n "$id"
+
+[body~="messenger.360.yandex.com"]
+on-button-left=exec hyprctl dispatch togglespecialworkspace messenger; makoctl dismiss -n "$id"
+```
+Use `app-name` for apps with unique names, `body~` or `summary~` (regex) for web app notifications that share the same browser app name.
+
 **Bluetooth headset won't auto-connect at boot** — The included `bt-autoconnect.sh` handles this. Set `$btDevices` in `hyprland.conf` to your device MAC(s). Sony/similar headsets need the host to initiate — BlueZ `AutoEnable` alone isn't enough.
 
 **Brave password autofill not working** — Known bug in Brave 1.88.x/Chromium 146 on Wayland ([#50882](https://github.com/brave/brave-browser/issues/50882)). Fix: add `--enable-features=UseOzonePlatform` and `--ozone-platform=x11` to `~/.config/brave-flags.conf`.
