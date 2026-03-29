@@ -22,6 +22,12 @@ on-button-left=exec hyprctl dispatch togglespecialworkspace telegram; makoctl di
 [body~="messenger.360.yandex.com"]
 on-button-left=exec hyprctl dispatch togglespecialworkspace messenger; makoctl dismiss -n "$id"
 
+[app-name="Hyprshot"]
+on-button-left=exec kitty yazi ~/Screenshots; makoctl dismiss -n "$id"
+
+[app-name="Screen Record"]
+on-button-left=exec kitty yazi ~/Screenshots; makoctl dismiss -n "$id"
+
 [urgency=low]
 background-color=#2b303bAA
 border-color=#64727DAA

@@ -1,3 +1,7 @@
+[manager]
+sort_by = "modified"
+sort_reverse = true
+
 [opener]
 edit = [
     { run = 'nvim "$@"', block = true, for = "unix" },
