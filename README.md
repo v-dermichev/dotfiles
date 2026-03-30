@@ -34,7 +34,7 @@ dotfiles config --local status.showUntrackedFiles no
 ### Packages
 ```shell
 # Core
-pacman -S hyprland waybar wofi grim slurp swappy mako socat jq qt6-wayland
+pacman -S hyprland waybar wofi grim slurp swappy swaync socat jq qt6-wayland
 
 # Screenshot & annotation
 pacman -S hyprshot satty
@@ -183,17 +183,17 @@ Config and state in `~/.config/wproulette/` — wallpaper directory, transition 
 
 **Chromium won't start** — Stale `SingletonLock` file from a crash. Remove `~/.config/chromium/SingletonLock`.
 
-**No notification sounds** — Add `on-notify=exec canberra-gtk-play -i complete` to mako config. Toggle sound mute via waybar bell icon (`makoctl mode -t silent`). DND mode suppresses both sound and visual notifications (`makoctl mode -t do-not-disturb`).
+**No notification sounds** — Using swaync with a script in `config.json`: `"exec": "canberra-gtk-play -i complete"` with `"run-on": "receive"`. DND toggle via waybar bell icon (right-click) or notification center panel.
 
-**Clicking notification doesn't focus app** — Add per-app criteria in mako config to switch workspaces on click:
-```ini
-[app-name="Telegram Desktop"]
-on-button-left=exec hyprctl dispatch togglespecialworkspace telegram; makoctl dismiss -n "$id"
-
-[body~="messenger.360.yandex.com"]
-on-button-left=exec hyprctl dispatch togglespecialworkspace messenger; makoctl dismiss -n "$id"
+**Clicking notification doesn't focus app** — Add per-app scripts in swaync `config.json`:
+```json
+"telegram-focus": {
+    "exec": "hyprctl dispatch togglespecialworkspace telegram",
+    "app-name": "Telegram Desktop",
+    "run-on": "action"
+}
 ```
-Use `app-name` for apps with unique names, `body~` or `summary~` (regex) for web app notifications that share the same browser app name.
+Use `app-name` for apps with unique names, `body` (regex) for web app notifications that share the same browser app name.
 
 **Bluetooth headset won't auto-connect at boot** — The included `bt-autoconnect.sh` handles this. Set `$btDevices` in `hyprland.conf` to your device MAC(s). Sony/similar headsets need the host to initiate — BlueZ `AutoEnable` alone isn't enough.
 
