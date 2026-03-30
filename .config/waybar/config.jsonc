@@ -16,9 +16,7 @@
         "custom/wallpaper-trash",
         "custom/wallpaper-star",
         "custom/wallpaper-starred",
-        "custom/notification-history",
-        "custom/notification-sound",
-        "custom/notification-dnd",
+        "custom/notification-center",
         "custom/opacity",
         // "bluetooth",
         "pulseaudio",
@@ -74,12 +72,20 @@
     },
     "tray": {
         "icon-size": 18,
-        "spacing": 10
+        "spacing": 10,
+        "show-passive-items": false,
+        "reverse-direction": false
     },
     "clock": {
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-        "format": "󰥔 {:%H:%M}",
-        "format-alt": "󰃭 {:%Y-%m-%d}"
+        "format": "󰥔 {:%H:%M %Z}",
+        "format-alt": "󰃭 {:%Y-%m-%d}",
+        "interval": 1,
+        "timezones": ["Europe/Podgorica", "Europe/Moscow"],
+        "actions": {
+            "on-scroll-up": "tz_up",
+            "on-scroll-down": "tz_down"
+        }
     },
     "cpu": {
         "format": "󰍛 {usage}%",
@@ -147,24 +153,24 @@
         "interval": 2,
         "on-click": "hyprctl keyword general:layout \"$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle)\""
     },
-    "custom/notification-history": {
-        "format": "󰋚",
-        "tooltip-format": "Notification history",
-        "on-click": "~/.config/hypr/scripts/notification-history.sh"
-    },
-    "custom/notification-sound": {
-        "exec": "MODE=$(makoctl mode); if echo $MODE | grep -qE 'silent|do-not-disturb'; then echo '{\"text\": \"󰂛\", \"tooltip\": \"Sounds: OFF\", \"class\": \"off\"}'; else echo '{\"text\": \"󰂚\", \"tooltip\": \"Sounds: ON\", \"class\": \"on\"}'; fi",
+    "custom/notification-center": {
+        "tooltip": false,
+        "format": "{icon}",
+        "format-icons": {
+            "notification": "󰂚",
+            "none": "󰂜",
+            "dnd-notification": "󰂛",
+            "dnd-none": "󰂛",
+            "inhibited-notification": "󰂚",
+            "inhibited-none": "󰂜",
+            "dnd-inhibited-notification": "󰂛",
+            "dnd-inhibited-none": "󰂛"
+        },
         "return-type": "json",
-        "interval": "once",
-        "signal": 9,
-        "on-click": "makoctl mode -t silent; pkill -RTMIN+9 waybar"
-    },
-    "custom/notification-dnd": {
-        "exec": "MODE=$(makoctl mode); if echo $MODE | grep -q do-not-disturb; then echo '{\"text\": \"󰍷\", \"tooltip\": \"DND: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰍶\", \"tooltip\": \"DND: OFF\", \"class\": \"off\"}'; fi",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 9,
-        "on-click": "makoctl mode -t do-not-disturb; pkill -RTMIN+9 waybar"
+        "exec": "swaync-client -swb",
+        "on-click": "sleep 0.1; swaync-client -t -sw",
+        "on-click-right": "swaync-client -d -sw",
+        "escape-to-close": true
     },
     "custom/opacity": {
         "exec": "if [ -f /tmp/opacity-enabled ] && [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo '{\"text\": \"󰂵\", \"tooltip\": \"Transparency: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂶\", \"tooltip\": \"Transparency: OFF\", \"class\": \"off\"}'; fi",

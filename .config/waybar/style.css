@@ -78,9 +78,7 @@ window#waybar.hidden {
 #workspaces { margin: 0; }
 
 /* Common interactive module style */
-#custom-notification-history,
-#custom-notification-sound,
-#custom-notification-dnd,
+#custom-notification-center,
 #custom-opacity,
 #custom-layout,
 #custom-hypr-split,
@@ -99,9 +97,7 @@ window#waybar.hidden {
     transition-duration: 300ms;
 }
 
-#custom-notification-history:hover,
-#custom-notification-sound:hover,
-#custom-notification-dnd:hover,
+#custom-notification-center:hover,
 #custom-opacity:hover,
 #custom-layout:hover,
 #custom-hypr-split:hover,
@@ -123,13 +119,6 @@ window#waybar.hidden {
 #custom-wallpaper-star.unstarred { color: rgba(255, 255, 255, 0.3); }
 #custom-wallpaper-star.starred { color: #d4a84b; }
 #custom-wallpaper-trash.disabled { color: rgba(255, 255, 255, 0.25); }
-
-/* DND states */
-#custom-notification-dnd.off { color: rgba(255, 255, 255, 0.25); }
-#custom-notification-dnd.on {
-    color: #f53c3c;
-    background-color: rgba(245, 60, 60, 0.2);
-}
 
 /* Layout toggles */
 #custom-layout { min-width: 20px; }

@@ -1,0 +1,53 @@
+{
+  "$schema": "/etc/xdg/swaync/configSchema.json",
+  "positionX": "right",
+  "positionY": "top",
+  "control-center-margin-top": 10,
+  "control-center-margin-bottom": 10,
+  "control-center-margin-right": 10,
+  "control-center-width": 400,
+  "notification-window-width": 350,
+  "notification-icon-size": 48,
+  "notification-body-image-height": 100,
+  "notification-body-image-width": 200,
+  "timeout": 5,
+  "timeout-low": 3,
+  "timeout-critical": 10,
+  "fit-to-screen": false,
+  "hide-on-clear": true,
+  "hide-on-action": true,
+  "script-fail-notify": false,
+  "scripts": {
+    "notification-sound": {
+      "exec": "canberra-gtk-play -i complete",
+      "app-name": ".*",
+      "run-on": "receive"
+    },
+    "telegram-focus": {
+      "exec": "hyprctl dispatch togglespecialworkspace telegram",
+      "app-name": "Telegram Desktop",
+      "run-on": "action"
+    },
+    "messenger-focus": {
+      "exec": "hyprctl dispatch togglespecialworkspace messenger",
+      "body": "messenger\\.360\\.yandex\\.com",
+      "run-on": "action"
+    }
+  },
+  "notification-visibility": {},
+  "widgets": [
+    "title",
+    "dnd",
+    "notifications"
+  ],
+  "widget-config": {
+    "title": {
+      "text": "Notifications",
+      "clear-all-button": true,
+      "button-text": "Clear"
+    },
+    "dnd": {
+      "text": "Do Not Disturb"
+    }
+  }
+}

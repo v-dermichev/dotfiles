@@ -1,0 +1,109 @@
+/* Match the waybar dark transparent theme */
+/* Override system CSS variables */
+
+* {
+    font-family: "JetBrainsMono Nerd Font", "Noto Color Emoji", sans-serif;
+    font-size: 13px;
+    --noti-bg: 43, 48, 59;
+    --noti-bg-alpha: 0.93;
+    --noti-bg-darker: rgb(35, 39, 48);
+    --noti-bg-hover: rgba(100, 114, 125, 0.3);
+    --noti-bg-focus: rgba(100, 114, 125, 0.2);
+    --noti-close-bg: rgba(245, 60, 60, 0.3);
+    --noti-close-bg-hover: rgba(245, 60, 60, 0.5);
+    --noti-border-color: rgba(100, 114, 125, 0.8);
+    --cc-bg: rgba(43, 48, 59, 0.93);
+    --border-radius: 10px;
+    --border: 2px solid rgba(100, 114, 125, 0.8);
+    --notification-shadow: none;
+}
+
+/* Control center panel */
+.control-center {
+    background-color: rgba(43, 48, 59, 0.93);
+    border: 2px solid rgba(100, 114, 125, 0.8);
+    border-radius: 10px;
+    color: #ffffff;
+}
+
+/* Notification cards — both floating and in center */
+.notification-row .notification-background .notification {
+    background-color: rgba(43, 48, 59, 0.93);
+    color: #ffffff;
+}
+
+/* Notification hover */
+.notification-default-action:hover {
+    background-color: rgba(100, 114, 125, 0.3);
+}
+
+/* Action buttons */
+.notification-action {
+    background-color: rgba(100, 114, 125, 0.3);
+    color: #ffffff;
+    border: none;
+}
+
+.notification-action:hover {
+    background-color: rgba(100, 114, 125, 0.5);
+}
+
+/* Text */
+.summary { font-weight: bold; color: #ffffff; }
+.body { color: rgba(255, 255, 255, 0.8); }
+.time { color: rgba(255, 255, 255, 0.5); font-size: 11px; }
+
+/* Widget title */
+.widget-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.widget-title button {
+    background-color: rgba(100, 114, 125, 0.3);
+    color: #ffffff;
+    border-radius: 8px;
+    border: none;
+}
+
+.widget-title button:hover {
+    background-color: rgba(100, 114, 125, 0.5);
+}
+
+/* DND toggle */
+.widget-dnd > switch {
+    border-radius: 12px;
+    background-color: rgba(100, 114, 125, 0.3);
+}
+
+.widget-dnd > switch:checked {
+    background-color: rgba(245, 60, 60, 0.4);
+}
+
+.widget-dnd > switch slider {
+    border-radius: 50%;
+    background-color: #ffffff;
+}
+
+/* Notification groups */
+.notification-group {
+    background-color: rgba(43, 48, 59, 0.93);
+    border: 2px solid rgba(100, 114, 125, 0.5);
+    border-radius: 10px;
+}
+
+.notification-group .notification-group-headers,
+.notification-group .notification-group-buttons {
+    color: #ffffff;
+}
+
+/* Urgency */
+.low {
+    border-color: rgba(100, 114, 125, 0.5);
+}
+
+.critical {
+    background-color: rgba(245, 60, 60, 0.2);
+    border-color: rgba(245, 60, 60, 0.8);
+}
