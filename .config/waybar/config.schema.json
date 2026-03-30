@@ -1,0 +1,557 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Alexays/Waybar/raw/master/resources/config.schema.json",
+  "title": "Waybar Configuration",
+  "description": "Configuration schema for Waybar — Highly customizable Wayland bar",
+  "type": "object",
+  "properties": {
+    "layer": {
+      "type": "string",
+      "enum": ["top", "bottom", "overlay"],
+      "default": "bottom",
+      "description": "GTK Layer Shell layer"
+    },
+    "position": {
+      "type": "string",
+      "enum": ["top", "bottom", "left", "right"],
+      "default": "top",
+      "description": "Bar position on screen"
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Bar height in pixels (0 = auto)"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Bar width in pixels (0 = auto)"
+    },
+    "spacing": {
+      "type": "integer",
+      "default": 0,
+      "description": "Space between modules in pixels"
+    },
+    "margin-top": {
+      "type": "integer",
+      "default": 0,
+      "description": "Top margin in pixels"
+    },
+    "margin-right": {
+      "type": "integer",
+      "default": 0,
+      "description": "Right margin in pixels"
+    },
+    "margin-bottom": {
+      "type": "integer",
+      "default": 0,
+      "description": "Bottom margin in pixels"
+    },
+    "margin-left": {
+      "type": "integer",
+      "default": 0,
+      "description": "Left margin in pixels"
+    },
+    "name": {
+      "type": "string",
+      "default": "waybar",
+      "description": "Bar window name and CSS class"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["default", "dock", "hide", "invisible", "overlay"],
+      "default": "default",
+      "description": "Bar display mode"
+    },
+    "start_hidden": {
+      "type": "boolean",
+      "default": false,
+      "description": "Hide bar on startup"
+    },
+    "fixed-center": {
+      "type": "boolean",
+      "default": true,
+      "description": "Keep center module section fixed in the middle"
+    },
+    "ipc": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable IPC integration"
+    },
+    "output": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Target output(s) for this bar config"
+    },
+    "include": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "Include additional config files"
+    },
+    "modules-left": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Modules on the left side of the bar"
+    },
+    "modules-center": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Modules in the center of the bar"
+    },
+    "modules-right": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Modules on the right side of the bar"
+    },
+    "hyprland/workspaces": {
+      "type": "object",
+      "description": "Hyprland workspaces module",
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "{name}",
+          "description": "Format string. Placeholders: {id}, {name}, {icon}, {windows}"
+        },
+        "format-icons": {
+          "type": "object",
+          "description": "Map workspace names/states to icons",
+          "additionalProperties": { "type": "string" }
+        },
+        "all-outputs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show workspaces from all monitors"
+        },
+        "show-special": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show special (scratchpad) workspaces"
+        },
+        "special-visible-only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only show special workspaces when visible"
+        },
+        "active-only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only show active, persistent, visible, or special workspaces"
+        },
+        "persistent-only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only show persistent workspaces"
+        },
+        "sort-by": {
+          "type": "string",
+          "enum": ["default", "number", "name", "id"],
+          "default": "default",
+          "description": "Workspace sort order"
+        },
+        "persistent-workspaces": {
+          "type": "object",
+          "description": "Define always-visible workspaces. Keys are workspace names, values are output arrays.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "ignore-workspaces": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Regex patterns of workspace names to hide"
+        },
+        "format-window-separator": {
+          "type": "string",
+          "default": " ",
+          "description": "Separator between windows in {windows}"
+        },
+        "window-rewrite": {
+          "type": "object",
+          "description": "Regex rules to rewrite window class/title to icons",
+          "additionalProperties": { "type": "string" }
+        },
+        "window-rewrite-default": {
+          "type": "string",
+          "default": "?",
+          "description": "Default icon for unmatched windows"
+        },
+        "move-to-monitor": {
+          "type": "boolean",
+          "default": false,
+          "description": "Move workspace to current monitor on click"
+        },
+        "enable-bar-scroll": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable scrolling through workspaces"
+        },
+        "disable-scroll": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable scroll events"
+        }
+      }
+    },
+    "hyprland/window": {
+      "type": "object",
+      "description": "Hyprland active window module",
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "{title}",
+          "description": "Format string. Placeholders: {title}, {initialTitle}, {class}, {initialClass}"
+        },
+        "max-length": {
+          "type": "integer",
+          "description": "Maximum title length in characters"
+        },
+        "rewrite": {
+          "type": "object",
+          "description": "Regex title rewrite rules",
+          "additionalProperties": { "type": "string" }
+        },
+        "separate-outputs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Track active window per monitor"
+        }
+      }
+    },
+    "hyprland/language": {
+      "type": "object",
+      "description": "Hyprland keyboard layout module",
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "{}",
+          "description": "Format string. {} = layout name"
+        },
+        "keyboard-name": {
+          "type": "string",
+          "description": "Target keyboard device name"
+        }
+      },
+      "patternProperties": {
+        "^format-": {
+          "type": "string",
+          "description": "Layout-specific format (e.g. format-en, format-ru)"
+        }
+      }
+    },
+    "clock": {
+      "type": "object",
+      "description": "Clock/calendar module",
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "{:%H:%M}",
+          "description": "Date/time format (C++ chrono format)"
+        },
+        "format-alt": {
+          "type": "string",
+          "description": "Alternative format toggled on click"
+        },
+        "tooltip-format": {
+          "type": "string",
+          "description": "Tooltip format with calendar support"
+        },
+        "locale": {
+          "type": "string",
+          "description": "Locale for date/time formatting"
+        },
+        "timezone": {
+          "type": "string",
+          "description": "Timezone (e.g. America/New_York)"
+        },
+        "timezones": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Multiple timezones to cycle through"
+        },
+        "interval": {
+          "type": "integer",
+          "default": 60,
+          "description": "Update interval in seconds"
+        }
+      }
+    },
+    "cpu": {
+      "type": "object",
+      "description": "CPU usage module",
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "{usage}%",
+          "description": "Format. Placeholders: {usage}, {icon}, {load}, {avg_frequency}, {max_frequency}, {min_frequency}"
+        },
+        "interval": {
+          "type": "integer",
+          "default": 10,
+          "description": "Update interval in seconds"
+        },
+        "tooltip": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tooltip with per-core usage"
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "description": "Memory usage module",
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "{}%",
+          "description": "Format. Placeholders: {used}, {total}, {percentage}, {avail}, {swapUsed}, {swapTotal}, {swapPercentage}"
+        },
+        "interval": {
+          "type": "integer",
+          "default": 30,
+          "description": "Update interval in seconds"
+        }
+      }
+    },
+    "temperature": {
+      "type": "object",
+      "description": "Temperature sensor module",
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "{temperatureC}°C",
+          "description": "Format. Placeholders: {temperatureC}, {temperatureF}, {temperatureK}, {icon}"
+        },
+        "format-critical": {
+          "type": "string",
+          "description": "Format when above critical threshold"
+        },
+        "critical-threshold": {
+          "type": "integer",
+          "default": 0,
+          "description": "Critical temperature in Celsius"
+        },
+        "thermal-zone": {
+          "type": "integer",
+          "default": 0,
+          "description": "Linux thermal zone index"
+        },
+        "hwmon-path": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "description": "Path to hwmon temperature file"
+        },
+        "interval": {
+          "type": "integer",
+          "default": 10,
+          "description": "Update interval in seconds"
+        }
+      }
+    },
+    "battery": {
+      "type": "object",
+      "description": "Battery status module",
+      "properties": {
+        "format": {
+          "type": "string",
+          "default": "{capacity}%",
+          "description": "Format. Placeholders: {capacity}, {time}, {icon}, {power}"
+        },
+        "format-charging": { "type": "string", "description": "Format while charging" },
+        "format-discharging": { "type": "string", "description": "Format while discharging" },
+        "format-full": { "type": "string", "description": "Format when full" },
+        "format-plugged": { "type": "string", "description": "Format when plugged in" },
+        "format-alt": { "type": "string", "description": "Alternative format" },
+        "format-icons": {
+          "oneOf": [
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "object", "additionalProperties": { "type": "string" } }
+          ],
+          "description": "Battery level icons"
+        },
+        "states": {
+          "type": "object",
+          "description": "Named battery states with thresholds (e.g. warning: 30, critical: 15)",
+          "additionalProperties": { "type": "integer" }
+        },
+        "bat": { "type": "string", "description": "Battery name in /sys/class/power_supply" },
+        "adapter": { "type": "string", "description": "AC adapter name" },
+        "full-at": { "type": "integer", "default": 100, "description": "Consider full at this %" },
+        "design-capacity": { "type": "boolean", "default": false, "description": "Use design capacity" },
+        "interval": { "type": "integer", "default": 60, "description": "Update interval in seconds" }
+      }
+    },
+    "network": {
+      "type": "object",
+      "description": "Network status module",
+      "properties": {
+        "format": { "type": "string", "description": "Default format. Placeholders: {ifname}, {ipaddr}, {cidr}, {icon}, {bandwidthUpBits}, {bandwidthDownBits}" },
+        "format-wifi": { "type": "string", "description": "WiFi format. Extra: {essid}, {signalStrength}, {signaldBm}, {frequency}" },
+        "format-ethernet": { "type": "string", "description": "Ethernet format" },
+        "format-disconnected": { "type": "string", "description": "Disconnected format" },
+        "format-linked": { "type": "string", "description": "Linked but no IP format" },
+        "format-alt": { "type": "string", "description": "Alternative format" },
+        "tooltip-format": { "type": "string", "description": "Tooltip format" },
+        "interface": { "type": "string", "description": "Network interface to monitor" },
+        "interval": { "type": "integer", "default": 60, "description": "Update interval in seconds" }
+      }
+    },
+    "bluetooth": {
+      "type": "object",
+      "description": "Bluetooth status module",
+      "properties": {
+        "format": { "type": "string", "description": "Format. Placeholders: {status}, {icon}, {num_connections}" },
+        "format-connected": { "type": "string", "description": "Connected format. Extra: {device_alias}, {device_address}, {device_battery_percentage}" },
+        "format-connected-battery": { "type": "string", "description": "Connected with battery info" },
+        "tooltip-format": { "type": "string", "description": "Tooltip format" },
+        "tooltip-format-connected": { "type": "string", "description": "Connected tooltip" },
+        "controller-alias": { "type": "string", "description": "Preferred controller alias" },
+        "format-device-preference": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Preferred device display order"
+        }
+      }
+    },
+    "pulseaudio": {
+      "type": "object",
+      "description": "PulseAudio/PipeWire volume module",
+      "properties": {
+        "format": { "type": "string", "description": "Format. Placeholders: {volume}, {icon}, {desc}, {format_source}" },
+        "format-muted": { "type": "string", "description": "Format when muted" },
+        "format-bluetooth": { "type": "string", "description": "Bluetooth device format" },
+        "format-bluetooth-muted": { "type": "string", "description": "Bluetooth muted format" },
+        "format-source": { "type": "string", "description": "Source (mic) format. Placeholders: {volume}, {desc}" },
+        "format-source-muted": { "type": "string", "description": "Source muted format" },
+        "format-icons": {
+          "type": "object",
+          "description": "Icons per device type or volume level",
+          "properties": {
+            "default": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }] },
+            "headphone": { "type": "string" },
+            "headset": { "type": "string" },
+            "hands-free": { "type": "string" },
+            "phone": { "type": "string" },
+            "portable": { "type": "string" },
+            "car": { "type": "string" }
+          }
+        },
+        "scroll-step": { "type": "number", "default": 1, "description": "Volume change per scroll %" },
+        "max-volume": { "type": "integer", "default": 100, "description": "Maximum volume %" },
+        "ignored-sinks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Sink names to ignore"
+        }
+      }
+    },
+    "backlight": {
+      "type": "object",
+      "description": "Screen backlight module",
+      "properties": {
+        "format": { "type": "string", "default": "{percent}%", "description": "Format. Placeholders: {percent}, {icon}" },
+        "format-icons": { "type": "array", "items": { "type": "string" }, "description": "Brightness level icons" },
+        "device": { "type": "string", "description": "Backlight device name" },
+        "interval": { "type": "integer", "default": 10, "description": "Update interval" }
+      }
+    },
+    "tray": {
+      "type": "object",
+      "description": "System tray module",
+      "properties": {
+        "icon-size": { "type": "integer", "default": 16, "description": "Icon size in pixels" },
+        "spacing": { "type": "integer", "default": 5, "description": "Space between icons" },
+        "show-passive-items": { "type": "boolean", "default": false, "description": "Show passive tray items" },
+        "reverse-direction": { "type": "boolean", "default": false, "description": "Reverse icon order" }
+      }
+    },
+    "idle_inhibitor": {
+      "type": "object",
+      "description": "Idle inhibitor toggle module",
+      "properties": {
+        "format": { "type": "string", "default": "{icon}", "description": "Format with {icon}" },
+        "format-icons": {
+          "type": "object",
+          "properties": {
+            "activated": { "type": "string" },
+            "deactivated": { "type": "string" }
+          },
+          "description": "Icons for activated/deactivated states"
+        }
+      }
+    }
+  },
+  "patternProperties": {
+    "^custom/": {
+      "type": "object",
+      "description": "Custom module — runs external commands",
+      "properties": {
+        "exec": { "type": "string", "description": "Command to execute for output" },
+        "exec-if": { "type": "string", "description": "Condition command (exit 0 = show module)" },
+        "exec-on-event": { "type": "boolean", "default": true, "description": "Re-run exec on click/scroll events" },
+        "format": { "type": "string", "default": "{}", "description": "Output format. {} = command output" },
+        "return-type": {
+          "type": "string",
+          "enum": ["string", "json"],
+          "default": "string",
+          "description": "Parse output as plain text or JSON ({text, tooltip, class, percentage})"
+        },
+        "interval": {
+          "oneOf": [
+            { "type": "integer" },
+            { "type": "string", "enum": ["once"] }
+          ],
+          "description": "Update interval in seconds. 'once' = run only once, 0 = continuous"
+        },
+        "signal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "SIGRTMIN+N signal number to trigger refresh"
+        },
+        "restart-interval": { "type": "number", "description": "Restart interval in seconds for continuous mode" },
+        "tooltip": { "type": "boolean", "default": true, "description": "Enable tooltip" },
+        "tooltip-format": { "type": "string", "description": "Tooltip format" },
+        "on-click": { "type": "string", "description": "Command on left click" },
+        "on-click-middle": { "type": "string", "description": "Command on middle click" },
+        "on-click-right": { "type": "string", "description": "Command on right click" },
+        "on-scroll-up": { "type": "string", "description": "Command on scroll up" },
+        "on-scroll-down": { "type": "string", "description": "Command on scroll down" },
+        "smooth-scrolling-threshold": { "type": "number", "description": "Smooth scrolling threshold" }
+      }
+    },
+    "^group/": {
+      "type": "object",
+      "description": "Group module — container for other modules",
+      "properties": {
+        "orientation": {
+          "type": "string",
+          "enum": ["horizontal", "vertical", "inherit"],
+          "description": "Group orientation"
+        },
+        "modules": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Child modules in this group"
+        },
+        "drawer": {
+          "type": "object",
+          "properties": {
+            "transition-duration": { "type": "integer", "description": "Animation duration in ms" },
+            "transition-left-to-right": { "type": "boolean", "default": true, "description": "Slide direction" },
+            "click-to-reveal": { "type": "boolean", "default": false, "description": "Click first module to reveal" }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}
