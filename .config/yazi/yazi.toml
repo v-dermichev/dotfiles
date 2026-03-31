@@ -1,8 +1,19 @@
-[manager]
-sort_by = "modified"
+[mgr]
+sort_by = "mtime"
 sort_reverse = true
+linemode = "mtime"
 
 [opener]
 edit = [
     { run = 'nvim "$@"', block = true, for = "unix" },
 ]
+
+[[plugin.prepend_fetchers]]
+id  = "git"
+url = "*"
+run = "git"
+
+[[plugin.prepend_fetchers]]
+id  = "git"
+url = "*/"
+run = "git"
