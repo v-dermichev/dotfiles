@@ -3,7 +3,7 @@
   "name": "Open External Links",
   "version": "1.1",
   "description": "Opens external links via xdg-open instead of current profile",
-  "permissions": ["nativeMessaging"],
+  "permissions": ["nativeMessaging", "tabs"],
   "content_scripts": [
     {
       "matches": ["https://messenger.360.yandex.com/*"],
