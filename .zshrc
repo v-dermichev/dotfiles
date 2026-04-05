@@ -5,6 +5,9 @@
 export ZSH="$HOME/.oh-my-zsh"
 export NVIM_HOME="$HOME/.config/nvim"
 export TERMINAL=/usr/bin/kitty
+export PATH="$PATH:/home/work/.local/share/JetBrains/Toolbox/scripts"
+export PATH="$PATH:/home/work/Android/Sdk/platform-tools"
+export PATH="$PATH:/home/work/Android/Sdk/emulator"
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time Oh My Zsh is loaded, in which case,
@@ -78,16 +81,38 @@ ZSH_THEME="agnoster"
 #
 plugins=(
     git
+    python
+    virtualenv
     dotenv
     zsh-autosuggestions
     zsh-syntax-highlighting
-    autoswitch_virtualenv
     zoxide
     fzf
+    uv
 )
 
+# zsh parameter completion for the dotnet CLI
 
 source $ZSH/oh-my-zsh.sh
+eval "$(dotnet completions script zsh)"
+_dotnet_zsh_complete()
+{
+  local completions=("$(dotnet complete "$words")")
+
+  # If the completion list is empty, just continue with filename selection
+  if [ -z "$completions" ]
+  then
+    _arguments '*::arguments: _normal'
+    return
+  fi
+
+  # This is not a variable assignment, don't remove spaces!
+  _values = "${(ps:\n:)completions}"
+}
+
+compdef _dotnet_zsh_complete dotnet
+
+
 
 # User configuration
 
@@ -119,17 +144,95 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
+pacman-arch() {
+    local tmp=$(mktemp)
+    cat /etc/pacman.conf > "$tmp"
+    printf '\n[extra]\nInclude = /etc/pacman.d/mirrorlist-arch\n' >> "$tmp"
+    sudo pacman --config "$tmp" "$@"
+    rm -f "$tmp"
+}
 
-# Auto-start or attach to persistent "work" tmux session
-if command -v tmux &>/dev/null; then
-  # If not already inside tmux
-  [ -z "$TMUX" ] && tmux new-session -A -s work
-fi
+function fzfdo() {
+    if [ $# -lt 1 ]; then
+        echo "Usage: fzfdo [fzf_options] <command> [command_options]"
+        return 1
+    fi
 
+    local args=("$@")
+    local cmd_index=0
+
+    # Detect first argument that is an existing command
+    for i in "${!args[@]}"; do
+        if command -v "${args[$i]}" &>/dev/null; then
+            cmd_index=$i
+            break
+        fi
+    done
+
+    if [ $cmd_index -eq 0 ]; then
+        echo "No valid command found"
+        return 1
+    fi
+
+    # fzf options are before the command
+    local fzf_opts=("${args[@]:0:$cmd_index}")
+
+    # command + its options are from cmd_index to end
+    local cmd_and_opts=("${args[@]:$cmd_index}")
+
+    # Run fzf to select entries
+    local selections
+    selections=$(fzf "${fzf_opts[@]}")
+    if [ -z "$selections" ]; then
+        echo "No selection made"
+        return 1
+    fi
+
+    # Run the command on each selected entry
+    while IFS= read -r entry; do
+        "${cmd_and_opts[@]}" "$entry"
+    done <<< "$selections"
+}
+
+function work() {
+    if command -v tmux &>/dev/null; then
+        if [ -n "$TMUX" ]; then
+            current_session=$(tmux display-message -p '#S')
+            echo "Already in tmux session '$current_session'."
+        else
+            tmux new-session -A -s work
+        fi
+    else
+        echo "tmux is not installed."
+    fi
+}
+
+fdo() {
+  local cmd=$1
+  shift
+  local file
+  file=$(fzf "$@") || return
+  $cmd "$file"
+}
 
 eval "$(zoxide init zsh)"
 
-# Bind z function to this completion
-compdef _zoxide_custom_complete z# Created by `pipx` on 2025-11-10 23:47:07
-export PATH="$PATH:/home/work/.local/bin"
+# Yazi shell integration — shows shell prompt header with cwd + git info
+function y() {
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+	yazi "$@" --cwd-file="$tmp"
+	if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+		builtin cd -- "$cwd"
+	fi
+	rm -f -- "$tmp"
+}
 
+export PATH="$PATH:/home/work/.local/bin"  
+
+export PATH="$HOME/.npm-global/bin:$PATH"
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# OpenClaw Completion
+# source "/home/work/.openclaw/completions/openclaw.zsh"
