@@ -63,9 +63,9 @@ pacman -S ttf-jetbrains-mono-nerd noto-fonts-emoji
 pacman -S nvidia-open-dkms nvidia-utils
 
 # Wallpaper
-pacman -S swww
-# Build from source: https://github.com/v-dermichev/swww-wproulette
-git clone https://github.com/v-dermichev/swww-wproulette && cd swww-wproulette
+pacman -S awww
+# Build from source: https://github.com/v-dermichev/awww-wproulette
+git clone https://github.com/v-dermichev/awww-wproulette && cd awww-wproulette
 cargo build --release && sudo cp target/release/wproulette /usr/local/bin/
 
 # Audio control
@@ -151,7 +151,7 @@ All workspaces use waybar's native `hyprland/workspaces` module — no custom mo
 
 ### Wallpaper Roulette
 
-Powered by [wproulette](https://github.com/v-dermichev/swww-wproulette) — a Rust CLI for swww with waybar integration.
+Powered by [wproulette](https://github.com/v-dermichev/awww-wproulette) — a Rust CLI for awww with waybar integration.
 
 Waybar includes 4 wallpaper controls (left to right):
 
