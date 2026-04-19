@@ -42,11 +42,12 @@ return {
       -- cmd = { "/home/ricardo/.cargo/bin/rust-analyzer" }
     })
     vim.lsp.config("clangd", {})
-    vim.lsp.config("jsonls", {})
+    vim.lsp.config("jsonls", {
+      filetypes = { "json", "jsonc" },
+    })
+    vim.lsp.config("taplo", {})
     vim.lsp.config("powershell_es", {})
     vim.lsp.config("astro", {})
-
-    print("Configuring servers")
 
     -- local jdtls_location = utils.get_jdtls_location();
     -- print("jdtls" .. jdtls_location)
@@ -58,19 +59,35 @@ return {
       cmd = {
         iswin and "roslyn.cmd" or "roslyn",
         "--logLevel=Information",
-        "--extensionLogDirectory=" .. vim.fs.dirname(vim.lsp.get_log_path()),
+        "--extensionLogDirectory=" .. vim.fn.stdpath("log"),
         "--stdio",
       },
       settings = {
         roslyn = {
-          enableAnalyzersSupport = true,      -- enable Roslyn analyzers
-          enableEditorConfigSupport = true,   -- respect .editorconfig rules
-          diagnostics = {
-            mode = "all",                     -- <-- REQUIRED to see warnings!
-          },
+          enableAnalyzersSupport = true,
+          enableEditorConfigSupport = true,
+          diagnostics = { mode = "all" },
         },
       },
       capabilities = capabilities,
+    })
+
+    -- Turn on inlay hints for any LSP client that supports them.
+    vim.api.nvim_create_autocmd("LspAttach", {
+      callback = function(args)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if not client then return end
+        local ok, supported = pcall(function()
+          if type(client.supports_method) == "function" then
+            return client:supports_method("textDocument/inlayHint")
+          end
+          return client.server_capabilities
+            and client.server_capabilities.inlayHintProvider ~= nil
+        end)
+        if ok and supported then
+          pcall(vim.lsp.inlay_hint.enable, true, { bufnr = args.buf })
+        end
+      end,
     })
 
     vim.lsp.config("lemminx", {

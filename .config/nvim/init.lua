@@ -6,7 +6,7 @@ require("config.options")
 vim.opt.clipboard = { "unnamedplus" } -- Use system clipboard as the default registers
 
 
-vim.o.guifont = "JetBrainsMono Nerd Font:h10"
+vim.o.guifont = "JetBrainsMono Nerd Font:h8"
 
 if vim.g.neovide then
     vim.g.neovide_window_width = 1200
@@ -102,6 +102,150 @@ vim.cmd.colorscheme("tokyonight-storm")
 -- vim.cmd('colorscheme vscode')
 -- vim.cmd('colorscheme fluoromachine')
 -- vim.cmd('colorscheme eldritch')
+
+-- More distinct pane separators while staying in the tokyonight palette.
+vim.opt.fillchars:append({ vert = "┃", vertleft = "┫", vertright = "┣", horiz = "━", horizup = "┻", horizdown = "┳", verthoriz = "╋" })
+vim.api.nvim_create_autocmd("ColorScheme", {
+  callback = function()
+    vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#7aa2f7", bg = "NONE", bold = true })
+  end,
+})
+vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#7aa2f7", bg = "NONE", bold = true })
+
+-- ---------------------------------------------------------------------------
+-- Semantic highlights (PyCharm / Darcula palette for LSP tokens)
+-- ---------------------------------------------------------------------------
+-- To revert to the tokyonight defaults, comment out the `apply_pycharm` call
+-- at the end of this block; the colorscheme will supply its own values again.
+local function apply_pycharm()
+  -- --- JetBrains "Islands Dark" palette -----------------------------------
+  local FG              = "#bcbec4" -- default text / local vars / parameters
+  local VAR             = "#bcbec4" -- local variables & parameters (default fg)
+  local FIELD           = "#c77dbb" -- fields / properties (pink)
+  local STATIC          = "#c77dbb" -- static members (italic)
+  local CONST           = "#c77dbb" -- const / readonly
+  local TYPE            = "#bcbec4" -- classes / types (default fg in Islands Dark)
+  local KEYWORD         = "#cf8e6d" -- keywords
+  local STRING          = "#6aab73" -- strings
+  local NUMBER          = "#2aacb8" -- numeric literals
+  local COMMENT         = "#7a7e85" -- comments (italic)
+  local FUNCTION        = "#56a8f5" -- methods (blue)
+  local NAMESPACE       = "#c77dbb" -- namespaces
+  local INTERFACE       = "#c77dbb"
+  local ENUM_MEMBER     = "#c77dbb"
+
+  -- Local variables / parameters: blue (Rider-style).
+  vim.api.nvim_set_hl(0, "@lsp.type.variable",                   { fg = VAR })
+  vim.api.nvim_set_hl(0, "@lsp.type.parameter",                  { fg = VAR })
+
+  -- Instance fields & properties: purple.
+  vim.api.nvim_set_hl(0, "@lsp.type.field",                      { fg = FIELD })
+  vim.api.nvim_set_hl(0, "@lsp.type.property",                   { fg = FIELD })
+
+  -- Static modifier on anything: italic purple.
+  vim.api.nvim_set_hl(0, "@lsp.typemod.variable.static",         { fg = STATIC, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.typemod.field.static",            { fg = STATIC, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.typemod.property.static",         { fg = STATIC, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.typemod.method.static",           { fg = FUNCTION, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.typemod.function.static",         { fg = FUNCTION, italic = true })
+
+  -- Const / readonly: dim purple, italic.
+  vim.api.nvim_set_hl(0, "@lsp.typemod.variable.readonly",       { fg = CONST, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.typemod.field.readonly",          { fg = CONST, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.typemod.property.readonly",       { fg = CONST, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.mod.readonly",                    { fg = CONST, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.mod.static",                      { italic = true })
+
+  -- Types / classes / enums / interfaces / structs — italic fg in Rider.
+  vim.api.nvim_set_hl(0, "@lsp.type.class",                      { fg = TYPE, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.type.struct",                     { fg = TYPE, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.type.enum",                       { fg = TYPE, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.type.interface",                  { fg = INTERFACE, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.type.type",                       { fg = TYPE, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.type.typeParameter",              { fg = TYPE, italic = true })
+  vim.api.nvim_set_hl(0, "@lsp.type.enumMember",                 { fg = ENUM_MEMBER })
+
+  -- Functions & methods (yellow in Darcula).
+  vim.api.nvim_set_hl(0, "@lsp.type.function",                   { fg = FUNCTION })
+  vim.api.nvim_set_hl(0, "@lsp.type.method",                     { fg = FUNCTION })
+  -- Clear any language-specific overrides so the generic ones above win.
+  for _, lang in ipairs({ "cs", "python", "rust", "c", "cpp", "lua", "typescript", "javascript" }) do
+    for _, grp in ipairs({
+      "@lsp.type.variable", "@lsp.type.parameter",
+      "@lsp.type.field", "@lsp.type.property",
+      "@lsp.type.function", "@lsp.type.method",
+      "@lsp.type.class", "@lsp.type.struct", "@lsp.type.enum", "@lsp.type.interface",
+      "@lsp.type.keyword", "@lsp.type.namespace",
+    }) do
+      vim.api.nvim_set_hl(0, grp .. "." .. lang, {})
+    end
+  end
+
+  -- Keywords / namespaces.
+  vim.api.nvim_set_hl(0, "@lsp.type.keyword",                    { fg = KEYWORD })
+  vim.api.nvim_set_hl(0, "@lsp.type.namespace",                  { fg = NAMESPACE })
+  vim.api.nvim_set_hl(0, "@lsp.type.macro",                      { fg = KEYWORD })
+
+  -- Legacy Vim syntax groups (fallback when a buffer has no treesitter / LSP highlight).
+  vim.api.nvim_set_hl(0, "Type",       { fg = TYPE })
+  vim.api.nvim_set_hl(0, "Structure",  { fg = TYPE })
+  vim.api.nvim_set_hl(0, "Identifier", { fg = VAR })
+  vim.api.nvim_set_hl(0, "Function",   { fg = FUNCTION })
+  vim.api.nvim_set_hl(0, "Statement",  { fg = KEYWORD })
+  vim.api.nvim_set_hl(0, "Keyword",    { fg = KEYWORD })
+  vim.api.nvim_set_hl(0, "Conditional",{ fg = KEYWORD })
+  vim.api.nvim_set_hl(0, "Repeat",     { fg = KEYWORD })
+  vim.api.nvim_set_hl(0, "String",     { fg = STRING })
+  vim.api.nvim_set_hl(0, "Number",     { fg = NUMBER })
+  vim.api.nvim_set_hl(0, "Constant",   { fg = CONST })
+  vim.api.nvim_set_hl(0, "Comment",    { fg = COMMENT, italic = true })
+
+  -- Treesitter fallbacks (for when LSP tokens aren't present).
+  vim.api.nvim_set_hl(0, "@variable",                            { fg = VAR })
+  vim.api.nvim_set_hl(0, "@variable.parameter",                  { fg = VAR })
+  vim.api.nvim_set_hl(0, "@variable.member",                     { fg = FIELD })      -- fields
+  vim.api.nvim_set_hl(0, "@parameter",                           { fg = VAR })
+  vim.api.nvim_set_hl(0, "@field",                               { fg = FIELD })
+  vim.api.nvim_set_hl(0, "@property",                            { fg = FG })          -- properties = plain fg
+  vim.api.nvim_set_hl(0, "@constant",                            { fg = CONST })
+  vim.api.nvim_set_hl(0, "@type",                                { fg = TYPE, italic = true })
+  vim.api.nvim_set_hl(0, "@type.builtin",                        { fg = TYPE, italic = true })
+  vim.api.nvim_set_hl(0, "@function",                            { fg = FUNCTION })
+  vim.api.nvim_set_hl(0, "@function.method",                     { fg = FUNCTION })
+  vim.api.nvim_set_hl(0, "@function.method.call",                { fg = FUNCTION })
+  vim.api.nvim_set_hl(0, "@method",                              { fg = FUNCTION })
+  vim.api.nvim_set_hl(0, "@keyword",                             { fg = KEYWORD })
+  vim.api.nvim_set_hl(0, "@operator",                            { fg = FG })
+  vim.api.nvim_set_hl(0, "@keyword.operator",                    { fg = FG })
+  vim.api.nvim_set_hl(0, "Operator",                             { fg = FG })
+  vim.api.nvim_set_hl(0, "@punctuation",                         { fg = FG })
+  vim.api.nvim_set_hl(0, "@punctuation.bracket",                 { fg = FG })
+  vim.api.nvim_set_hl(0, "@punctuation.delimiter",               { fg = FG })
+  vim.api.nvim_set_hl(0, "@punctuation.special",                 { fg = FG })
+  vim.api.nvim_set_hl(0, "Delimiter",                            { fg = FG })
+  vim.api.nvim_set_hl(0, "@string",                              { fg = STRING })
+  vim.api.nvim_set_hl(0, "@number",                              { fg = NUMBER })
+  vim.api.nvim_set_hl(0, "@comment",                             { fg = COMMENT, italic = true })
+end
+
+-- --- Previous / tokyonight-storm defaults (for reference) ------------------
+-- @lsp.type.variable          → fg #c0caf5 (default fg)
+-- @lsp.type.parameter         → fg #e0af68 (orange)
+-- @lsp.type.field             → fg #7dcfff (cyan)
+-- @lsp.type.property          → fg #7dcfff (cyan)
+-- @lsp.typemod.variable.static→ (no distinct style, falls through to @lsp.type.variable)
+-- @lsp.typemod.*.readonly     → (no distinct style)
+-- @lsp.type.class/struct/enum → fg #2ac3de
+-- @lsp.type.interface         → fg #2ac3de
+-- @lsp.type.function/method   → fg #7aa2f7
+-- @lsp.type.keyword           → fg #9d7cd8 (purple)
+-- @lsp.type.namespace         → fg #c0caf5
+-- ---------------------------------------------------------------------------
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+  callback = apply_pycharm,
+})
+apply_pycharm()
 
 vim.lsp.enable("lua_ls")
 vim.lsp.enable("astro")
