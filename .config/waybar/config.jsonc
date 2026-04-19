@@ -34,6 +34,7 @@
     "hyprland/workspaces": {
         "persistent-workspaces": {
             "8": [],
+            "Windows": [],
             "IDE": []
         },
         "format": "{icon}",
@@ -49,6 +50,7 @@
             "9": "9",
             "IDE": "󰨞",
             "Steam": "󰓓",
+            "Windows": "",
             "special:music": "󰎆",
             "special:messenger": "",
             "special:telegram": "󰒊",
