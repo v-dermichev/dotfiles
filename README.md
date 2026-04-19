@@ -1,31 +1,69 @@
 # Dotfiles
 
-![Showcase](showcase.png)
-
 Hyprland + Waybar setup with transparent windows, nerd font icons, smart monitor management, and a unified dark theme across all components.
 
 All hardware-specific values (monitor names, resolutions, opacity, bluetooth devices) are configurable via variables at the top of `hyprland.conf` — no need to hunt through the config.
 
-# Instructions
+## Quick Start
 
-## 1. Requirements
-- zsh
-- kitty or wezterm (terminal)
-- oh-my-zsh
-- neovim (using Lazy.nvim for plugins)
-- tmux+tpm
-- git
-- zsh-autoswitch-virtualenv
+```shell
+curl -fsSL https://raw.githubusercontent.com/v-dermichev/dotfiles/master/bootstrap.sh | sh
+```
 
-## 2. One of many ways to replicate setup
+This clones the bare repo, backs up any conflicting files, and checks out all configs. Then:
+
+```shell
+source ~/.zshrc
+dotfiles --healthcheck   # see what's missing
+dotfiles --install       # install missing packages
+```
+
+## Manual Setup
+
 ```shell
 git clone --bare https://github.com/v-dermichev/dotfiles.git $HOME/.dotfiles
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 dotfiles checkout
 dotfiles config --local status.showUntrackedFiles no
+source ~/.zshrc
 ```
 
-## 3. Hyprland + Waybar Setup (Artix/Arch)
+## Dotfiles CLI
+
+After setup, the `dotfiles` command provides both custom subcommands and full git passthrough:
+
+```
+dotfiles --healthcheck   Check all dependencies and configs
+dotfiles --install       Install missing dependencies (pacman + manual)
+dotfiles --sync          Pull latest dotfiles from remote
+dotfiles --backup        Snapshot tracked configs to ~/.dotfiles-backup/
+dotfiles --edit          Open .zshrc in $EDITOR
+dotfiles --help          Show usage
+
+dotfiles status          Git passthrough
+dotfiles add / commit / push / log / diff / ...
+```
+
+## Dependencies
+
+### Checked by `dotfiles --healthcheck`
+
+| Dependency | Install |
+|---|---|
+| oh-my-zsh | `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"` |
+| zsh-autosuggestions | `git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions` |
+| zsh-syntax-highlighting | `git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting` |
+| git | `sudo pacman -S git` |
+| fzf | `sudo pacman -S fzf` |
+| zoxide | `sudo pacman -S zoxide` |
+| yazi | `sudo pacman -S yazi` |
+| tmux | `sudo pacman -S tmux` |
+| kitty | `sudo pacman -S kitty` |
+| neovim | `sudo pacman -S neovim` |
+| dotnet | `sudo pacman -S dotnet-sdk` |
+| nvm | `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh \| bash` |
+
+## Hyprland + Waybar Setup (Artix/Arch)
 
 > **Note:** This setup is systemd-free. All services use OpenRC, elogind, udev rules, and shell scripts instead of systemd units/timers.
 >
@@ -57,7 +95,6 @@ pacman -S wl-clipboard cliphist
 
 # Fonts
 pacman -S ttf-jetbrains-mono-nerd noto-fonts-emoji
-
 
 # NVIDIA (skip if not using NVIDIA)
 pacman -S nvidia-open-dkms nvidia-utils

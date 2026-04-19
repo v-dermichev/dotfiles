@@ -1,23 +1,3 @@
-# Dependency checks
-_zshrc_check() {
-    local missing=()
-    [[ ! -d "$HOME/.oh-my-zsh" ]] && missing+=("oh-my-zsh: sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\"")
-    [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]] && missing+=("zsh-autosuggestions: git clone https://github.com/zsh-users/zsh-autosuggestions \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions")
-    [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]] && missing+=("zsh-syntax-highlighting: git clone https://github.com/zsh-users/zsh-syntax-highlighting \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting")
-    ! command -v fzf &>/dev/null && missing+=("fzf: sudo pacman -S fzf")
-    ! command -v zoxide &>/dev/null && missing+=("zoxide: sudo pacman -S zoxide")
-    ! command -v yazi &>/dev/null && missing+=("yazi: sudo pacman -S yazi")
-    ! command -v dotnet &>/dev/null && missing+=("dotnet: sudo pacman -S dotnet-sdk")
-    if (( ${#missing[@]} )); then
-        printf '\033[33m[zshrc] Missing dependencies:\033[0m\n'
-        for m in "${missing[@]}"; do
-            printf '  \033[31m✗\033[0m %s\n' "$m"
-        done
-    fi
-}
-_zshrc_check
-unfunction _zshrc_check
-
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 export NVIM_HOME="$HOME/.config/nvim"
@@ -162,7 +142,153 @@ fi
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
+dotfiles() {
+  local _git="/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME"
+
+  case "$1" in
+  --help)
+    cat <<'HELP'
+Usage: dotfiles [command] [args...]
+
+Commands:
+  --healthcheck   Check all dependencies and configs
+  --install       Install missing dependencies (pacman + manual)
+  --sync          Pull latest dotfiles and checkout
+  --backup        Backup current configs to ~/.dotfiles-backup/
+  --edit          Open .zshrc in $EDITOR
+  --help          Show this help
+
+Git passthrough:
+  dotfiles status / log / diff / add / commit / push / ...
+  All other arguments are forwarded to git.
+HELP
+    ;;
+
+  --healthcheck)
+    local ok=() missing=()
+    _df_cmd()  { command -v "$1" &>/dev/null && ok+=("$1") || missing+=("$1|$2"); }
+    _df_dir()  { [[ -d "$2" ]] && ok+=("$1") || missing+=("$1|$3"); }
+
+    # Shell framework
+    _df_dir "oh-my-zsh" "$HOME/.oh-my-zsh" \
+      "sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+    _df_dir "zsh-autosuggestions" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" \
+      "git clone https://github.com/zsh-users/zsh-autosuggestions \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
+    _df_dir "zsh-syntax-highlighting" "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" \
+      "git clone https://github.com/zsh-users/zsh-syntax-highlighting \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
+
+    # CLI tools
+    _df_cmd git      "sudo pacman -S git"
+    _df_cmd fzf      "sudo pacman -S fzf"
+    _df_cmd zoxide   "sudo pacman -S zoxide"
+    _df_cmd yazi     "sudo pacman -S yazi"
+    _df_cmd tmux     "sudo pacman -S tmux"
+    _df_cmd kitty    "sudo pacman -S kitty"
+    _df_cmd nvim     "sudo pacman -S neovim"
+    _df_cmd dotnet   "sudo pacman -S dotnet-sdk"
+    _df_cmd nvm      "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash"
+
+    # Dotfiles repo
+    [[ -d "$HOME/.dotfiles" ]] && ok+=("dotfiles repo") || \
+      missing+=("dotfiles repo|git clone --bare https://github.com/v-dermichev/dotfiles.git \$HOME/.dotfiles")
+
+    # Config dirs
+    _df_dir "hyprland config" "$HOME/.config/hypr"       "dotfiles checkout -- .config/hypr"
+    _df_dir "kitty config"    "$HOME/.config/kitty"      "dotfiles checkout -- .config/kitty"
+    _df_dir "nvim config"     "$HOME/.config/nvim"       "dotfiles checkout -- .config/nvim"
+    _df_dir "waybar config"   "$HOME/.config/waybar"     "dotfiles checkout -- .config/waybar"
+    _df_dir "yazi config"     "$HOME/.config/yazi"       "dotfiles checkout -- .config/yazi"
+
+    printf '\033[1m=== Dotfiles Healthcheck ===\033[0m\n\n'
+    for item in "${ok[@]}"; do
+      printf '  \033[32m✓\033[0m %s\n' "$item"
+    done
+    if (( ${#missing[@]} )); then
+      printf '\n'
+      for m in "${missing[@]}"; do
+        printf '  \033[31m✗\033[0m %s\n  \033[90m  %s\033[0m\n' "${m%%|*}" "${m#*|}"
+      done
+    fi
+    printf '\n  \033[32m%d\033[0m ok, \033[31m%d\033[0m missing\n' "${#ok[@]}" "${#missing[@]}"
+
+    unfunction _df_cmd _df_dir 2>/dev/null
+    return $(( ${#missing[@]} > 0 ))
+    ;;
+
+  --install)
+    local pacman_pkgs=()
+    local manual=()
+    command -v fzf      &>/dev/null || pacman_pkgs+=(fzf)
+    command -v zoxide   &>/dev/null || pacman_pkgs+=(zoxide)
+    command -v yazi     &>/dev/null || pacman_pkgs+=(yazi)
+    command -v tmux     &>/dev/null || pacman_pkgs+=(tmux)
+    command -v kitty    &>/dev/null || pacman_pkgs+=(kitty)
+    command -v nvim     &>/dev/null || pacman_pkgs+=(neovim)
+    command -v dotnet   &>/dev/null || pacman_pkgs+=(dotnet-sdk)
+    command -v git      &>/dev/null || pacman_pkgs+=(git)
+
+    [[ ! -d "$HOME/.oh-my-zsh" ]] && \
+      manual+=("oh-my-zsh: sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\"")
+    [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]] && \
+      manual+=("zsh-autosuggestions: git clone https://github.com/zsh-users/zsh-autosuggestions \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions")
+    [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]] && \
+      manual+=("zsh-syntax-highlighting: git clone https://github.com/zsh-users/zsh-syntax-highlighting \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting")
+    ! command -v nvm &>/dev/null && [[ ! -s "$NVM_DIR/nvm.sh" ]] && \
+      manual+=("nvm: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash")
+
+    if (( ${#pacman_pkgs[@]} )); then
+      printf '\033[34m[dotfiles]\033[0m Installing via pacman: %s\n' "${pacman_pkgs[*]}"
+      sudo pacman -S --needed "${pacman_pkgs[@]}"
+    else
+      printf '\033[32m[dotfiles]\033[0m All pacman packages present.\n'
+    fi
+
+    if (( ${#manual[@]} )); then
+      printf '\n\033[33m[dotfiles]\033[0m Manual installs needed:\n'
+      for m in "${manual[@]}"; do
+        printf '  \033[31m✗\033[0m %s\n' "$m"
+      done
+    fi
+    ;;
+
+  --sync)
+    printf '\033[34m[dotfiles]\033[0m Pulling latest...\n'
+    eval "$_git pull --rebase origin master"
+    printf '\033[32m[dotfiles]\033[0m Synced.\n'
+    ;;
+
+  --backup)
+    local backup_dir="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$backup_dir"
+    eval "$_git ls-tree -r HEAD --name-only" | while IFS= read -r file; do
+      [[ -f "$HOME/$file" ]] || continue
+      local dir=$(dirname "$file")
+      mkdir -p "$backup_dir/$dir"
+      cp "$HOME/$file" "$backup_dir/$file"
+    done
+    printf '\033[32m[dotfiles]\033[0m Backed up to %s\n' "$backup_dir"
+    ;;
+
+  --edit)
+    ${EDITOR:-nvim} "$HOME/.zshrc"
+    ;;
+
+  --)
+    shift
+    eval "$_git $*"
+    ;;
+
+  --*)
+    printf '\033[31m[dotfiles]\033[0m Unknown command: %s\n' "$1"
+    printf 'Run "dotfiles --help" for usage.\n'
+    return 1
+    ;;
+
+  *)
+    eval "$_git $*"
+    ;;
+  esac
+}
 pacman-arch() {
     local tmp=$(mktemp)
     cat /etc/pacman.conf > "$tmp"
@@ -171,47 +297,63 @@ pacman-arch() {
     rm -f "$tmp"
 }
 
-function fzfdo() {
-    if [ $# -lt 1 ]; then
-        echo "Usage: fzfdo [fzf_options] <command> [command_options]"
-        return 1
+if command -v fzf &>/dev/null; then
+  function fzfdo() {
+      if [ $# -lt 1 ]; then
+          echo "Usage: fzfdo [fzf_options] <command> [command_options]"
+          return 1
+      fi
+
+      local args=("$@")
+      local cmd_index=0
+
+      # Detect first argument that is an existing command
+      for i in "${!args[@]}"; do
+          if command -v "${args[$i]}" &>/dev/null; then
+              cmd_index=$i
+              break
+          fi
+      done
+
+      if [ $cmd_index -eq 0 ]; then
+          echo "No valid command found"
+          return 1
+      fi
+
+      # fzf options are before the command
+      local fzf_opts=("${args[@]:0:$cmd_index}")
+
+      # command + its options are from cmd_index to end
+      local cmd_and_opts=("${args[@]:$cmd_index}")
+
+      # Run fzf to select entries
+      local selections
+      selections=$(fzf "${fzf_opts[@]}")
+      if [ -z "$selections" ]; then
+          echo "No selection made"
+          return 1
+      fi
+
+      # Run the command on each selected entry
+      while IFS= read -r entry; do
+          "${cmd_and_opts[@]}" "$entry"
+      done <<< "$selections"
+  }
+
+  fdo() {
+    local cmd=$1
+    shift
+    local file
+    file=$(fzf "$@") || return
+    $cmd "$file"
+  }
+
+  _fzf_complete_pacman() {
+    if [[ "$@" == *"-S"* ]]; then
+      _fzf_complete -- "$@" < <(pacman -Ssq)
     fi
-
-    local args=("$@")
-    local cmd_index=0
-
-    # Detect first argument that is an existing command
-    for i in "${!args[@]}"; do
-        if command -v "${args[$i]}" &>/dev/null; then
-            cmd_index=$i
-            break
-        fi
-    done
-
-    if [ $cmd_index -eq 0 ]; then
-        echo "No valid command found"
-        return 1
-    fi
-
-    # fzf options are before the command
-    local fzf_opts=("${args[@]:0:$cmd_index}")
-
-    # command + its options are from cmd_index to end
-    local cmd_and_opts=("${args[@]:$cmd_index}")
-
-    # Run fzf to select entries
-    local selections
-    selections=$(fzf "${fzf_opts[@]}")
-    if [ -z "$selections" ]; then
-        echo "No selection made"
-        return 1
-    fi
-
-    # Run the command on each selected entry
-    while IFS= read -r entry; do
-        "${cmd_and_opts[@]}" "$entry"
-    done <<< "$selections"
-}
+  }
+fi
 
 function work() {
     if command -v tmux &>/dev/null; then
@@ -226,31 +368,18 @@ function work() {
     fi
 }
 
-fdo() {
-  local cmd=$1
-  shift
-  local file
-  file=$(fzf "$@") || return
-  $cmd "$file"
-}
-
-_fzf_complete_pacman() {
-  if [[ "$@" == *"-S"* ]]; then
-    _fzf_complete -- "$@" < <(pacman -Ssq)
-  fi
-}
-
 command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
 
-# Yazi shell integration — shows shell prompt header with cwd + git info
-function y() {
-	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
-	yazi "$@" --cwd-file="$tmp"
-	if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-		builtin cd -- "$cwd"
-	fi
-	rm -f -- "$tmp"
-}
+if command -v yazi &>/dev/null; then
+  function y() {
+    local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+    yazi "$@" --cwd-file="$tmp"
+    if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+      builtin cd -- "$cwd"
+    fi
+    rm -f -- "$tmp"
+  }
+fi
 
 export PATH="$PATH:/home/work/.local/bin"  
 
