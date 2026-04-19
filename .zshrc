@@ -289,6 +289,26 @@ HELP
     ;;
   esac
 }
+_dotfiles_complete() {
+  local -a subcmds
+  subcmds=(
+    '--healthcheck:Check all dependencies and configs'
+    '--install:Install missing dependencies'
+    '--sync:Pull latest dotfiles from remote'
+    '--backup:Backup tracked configs to ~/.dotfiles-backup/'
+    '--edit:Open .zshrc in $EDITOR'
+    '--help:Show usage'
+  )
+  if [[ "$words[2]" == --* ]] && (( CURRENT == 2 )); then
+    _describe 'dotfiles command' subcmds
+  else
+    # git completion for passthrough
+    words[1]=git
+    _git
+  fi
+}
+compdef _dotfiles_complete dotfiles
+
 pacman-arch() {
     local tmp=$(mktemp)
     cat /etc/pacman.conf > "$tmp"
