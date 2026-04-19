@@ -1,6 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=YChat (ignored)
-Exec=/bin/true %u
-NoDisplay=true
-MimeType=x-scheme-handler/ychat;
