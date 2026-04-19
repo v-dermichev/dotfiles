@@ -24,10 +24,11 @@ dotfiles --install       # install missing packages
 
 ```shell
 git clone --bare https://github.com/v-dermichev/dotfiles.git $HOME/.dotfiles
+# Temporary alias for initial checkout (replaced by function in .zshrc)
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 dotfiles checkout
 dotfiles config --local status.showUntrackedFiles no
-source ~/.zshrc
+source ~/.zshrc  # loads the full dotfiles() function with --healthcheck, --install, etc.
 ```
 
 ## Dotfiles CLI
