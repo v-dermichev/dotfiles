@@ -110,7 +110,7 @@ plugins=(
 
 # zsh parameter completion for the dotnet CLI
 
-source $ZSH/oh-my-zsh.sh
+[[ -f $ZSH/oh-my-zsh.sh ]] && source $ZSH/oh-my-zsh.sh
 if command -v dotnet &>/dev/null; then
   eval "$(dotnet completions script zsh)"
   _dotnet_zsh_complete()
