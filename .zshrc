@@ -1,5 +1,22 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+# Dependency checks
+_zshrc_check() {
+    local missing=()
+    [[ ! -d "$HOME/.oh-my-zsh" ]] && missing+=("oh-my-zsh: sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\"")
+    [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]] && missing+=("zsh-autosuggestions: git clone https://github.com/zsh-users/zsh-autosuggestions \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions")
+    [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]] && missing+=("zsh-syntax-highlighting: git clone https://github.com/zsh-users/zsh-syntax-highlighting \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting")
+    ! command -v fzf &>/dev/null && missing+=("fzf: sudo pacman -S fzf")
+    ! command -v zoxide &>/dev/null && missing+=("zoxide: sudo pacman -S zoxide")
+    ! command -v yazi &>/dev/null && missing+=("yazi: sudo pacman -S yazi")
+    ! command -v dotnet &>/dev/null && missing+=("dotnet: sudo pacman -S dotnet-sdk")
+    if (( ${#missing[@]} )); then
+        printf '\033[33m[zshrc] Missing dependencies:\033[0m\n'
+        for m in "${missing[@]}"; do
+            printf '  \033[31m✗\033[0m %s\n' "$m"
+        done
+    fi
+}
+_zshrc_check
+unfunction _zshrc_check
 
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -94,23 +111,25 @@ plugins=(
 # zsh parameter completion for the dotnet CLI
 
 source $ZSH/oh-my-zsh.sh
-eval "$(dotnet completions script zsh)"
-_dotnet_zsh_complete()
-{
-  local completions=("$(dotnet complete "$words")")
+if command -v dotnet &>/dev/null; then
+  eval "$(dotnet completions script zsh)"
+  _dotnet_zsh_complete()
+  {
+    local completions=("$(dotnet complete "$words")")
 
-  # If the completion list is empty, just continue with filename selection
-  if [ -z "$completions" ]
-  then
-    _arguments '*::arguments: _normal'
-    return
-  fi
+    # If the completion list is empty, just continue with filename selection
+    if [ -z "$completions" ]
+    then
+      _arguments '*::arguments: _normal'
+      return
+    fi
 
-  # This is not a variable assignment, don't remove spaces!
-  _values = "${(ps:\n:)completions}"
-}
+    # This is not a variable assignment, don't remove spaces!
+    _values = "${(ps:\n:)completions}"
+  }
 
-compdef _dotnet_zsh_complete dotnet
+  compdef _dotnet_zsh_complete dotnet
+fi
 
 
 
@@ -215,7 +234,13 @@ fdo() {
   $cmd "$file"
 }
 
-eval "$(zoxide init zsh)"
+_fzf_complete_pacman() {
+  if [[ "$@" == *"-S"* ]]; then
+    _fzf_complete -- "$@" < <(pacman -Ssq)
+  fi
+}
+
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
 
 # Yazi shell integration — shows shell prompt header with cwd + git info
 function y() {
@@ -236,3 +261,4 @@ export NVM_DIR="$HOME/.nvm"
 
 # OpenClaw Completion
 # source "/home/work/.openclaw/completions/openclaw.zsh"
+export LC_TIME="C.UTF-8"
