@@ -185,6 +185,7 @@ HELP
     _df_cmd tmux     "sudo pacman -S tmux"
     _df_cmd kitty    "sudo pacman -S kitty"
     _df_cmd nvim     "sudo pacman -S neovim"
+    _df_cmd lazygit  "sudo pacman -S lazygit"
     _df_cmd dotnet   "sudo pacman -S dotnet-sdk"
     _df_cmd nvm      "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash"
 
@@ -198,6 +199,9 @@ HELP
     _df_dir "nvim config"     "$HOME/.config/nvim"       "dotfiles checkout -- .config/nvim"
     _df_dir "waybar config"   "$HOME/.config/waybar"     "dotfiles checkout -- .config/waybar"
     _df_dir "yazi config"     "$HOME/.config/yazi"       "dotfiles checkout -- .config/yazi"
+    _df_dir "lazygit config"  "$HOME/.config/lazygit"    "dotfiles checkout -- .config/lazygit"
+    _df_dir "gtk-3.0 config"  "$HOME/.config/gtk-3.0"    "dotfiles checkout -- .config/gtk-3.0"
+    _df_dir "qt6ct config"    "$HOME/.config/qt6ct"      "dotfiles checkout -- .config/qt6ct"
 
     printf '\033[1m=== Dotfiles Healthcheck ===\033[0m\n\n'
     for item in "${ok[@]}"; do
