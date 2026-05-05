@@ -33,7 +33,7 @@ return {
     })
     -- local utils = require("my.utils");
 
-    vim.lsp.config("tsserver", {
+    vim.lsp.config("ts_ls", {
       capabilities = capabilities,
     })
 
@@ -45,7 +45,30 @@ return {
     vim.lsp.config("jsonls", {
       filetypes = { "json", "jsonc" },
     })
-    vim.lsp.config("taplo", {})
+    vim.lsp.config("taplo", {
+      root_markers = { "taplo.toml", ".taplo.toml", "pyproject.toml", "Cargo.toml", ".git" },
+      settings = {
+        evenBetterToml = {
+          schema = {
+            enabled = true,
+            catalogs = { "https://taplo.tamasfe.dev/schema_index.json" },
+            associations = {
+              ["pyproject\\.toml$"]   = "https://json.schemastore.org/pyproject.json",
+              ["Cargo\\.toml$"]       = "https://json.schemastore.org/cargo.json",
+              ["ruff\\.toml$"]        = "https://json.schemastore.org/ruff.json",
+              ["\\.ruff\\.toml$"]     = "https://json.schemastore.org/ruff.json",
+              ["rustfmt\\.toml$"]     = "https://json.schemastore.org/rustfmt.json",
+              ["\\.rustfmt\\.toml$"]  = "https://json.schemastore.org/rustfmt.json",
+              ["rust-toolchain\\.toml$"] = "https://json.schemastore.org/rust-toolchain.json",
+              ["uv\\.toml$"]          = "https://raw.githubusercontent.com/astral-sh/uv/main/uv.schema.json",
+              ["netlify\\.toml$"]     = "https://json.schemastore.org/netlify.json",
+              ["wrangler\\.toml$"]    = "https://json.schemastore.org/wrangler.json",
+              ["yazi/yazi\\.toml$"]   = "https://yazi-rs.github.io/schemas/yazi.json",
+            },
+          },
+        },
+      },
+    })
     vim.lsp.config("powershell_es", {})
     vim.lsp.config("astro", {})
 
