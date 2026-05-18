@@ -240,3 +240,12 @@ Use `app-name` for apps with unique names, `body` (regex) for web app notificati
 **Cursor disappearing/flickering on NVIDIA** — Set `no_hardware_cursors = true` in `hyprland.conf` cursor section. Hardware cursors work on newer NVIDIA drivers (590+) but may cause issues on older versions or multi-monitor setups.
 
 **Internal monitor keeps re-enabling** — `hyprctl keyword monitor` is a runtime override that doesn't survive DPMS/suspend cycles. The included `monitor-watcher.sh` listens to Hyprland events and re-enforces the disable.
+
+**Steam/Proton games crash on launch or stutter under shader compile (UE5, large titles)** — Modern engines open thousands of shader/PSO files in parallel during precompile. The default `nofile` ulimit (often 4096 on a fresh Artix install) gets exhausted and the game dies with a generic `EXCEPTION_ACCESS_VIOLATION` whose real cause only shows up in `~/steam-<appid>.log` after setting `PROTON_LOG=1` — look for `err:winediag:NtCreateFile Too many open files`. Fix via PAM (`pam_limits.so` is already in `system-auth`, no systemd needed) — create `/etc/security/limits.d/99-nofile.conf`:
+```
+*       soft    nofile    524288
+*       hard    nofile    1048576
+root    soft    nofile    524288
+root    hard    nofile    1048576
+```
+Then fully log out and back in (limits are set at PAM session creation, not refreshed mid-session). Verify with `ulimit -Hn` — should print `1048576`, not `4096`.
