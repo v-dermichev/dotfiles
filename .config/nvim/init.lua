@@ -1,6 +1,8 @@
 require("config.lazy")
 require("config.keymaps")
 require("config.options")
+require("config.venv").setup()
+require("config.line_length").setup()
 
 -- vim.opt.clipboard = { "unnamed", "unnamedplus" } -- Use system clipboard as the default registers
 vim.opt.clipboard = { "unnamedplus" } -- Use system clipboard as the default registers
@@ -40,6 +42,12 @@ vim.opt.cursorline = true      -- Highlight the line where the cursor is
 -- vim.opt.termguicolors = true   -- Enable 24-bit colors
 vim.opt.signcolumn = "yes"     -- Always show the sign column (for git/lsp)
 vim.opt.wrap = false           -- Don't wrap long lines
+
+-- Gutter layout with breathing room: a leading pad so signs aren't jammed
+-- against the window edge, the relative/absolute line number right-aligned,
+-- and a trailing pad so the number isn't glued to the buffer text.
+vim.opt.statuscolumn =
+  " %s%=%{% v:relnum == 0 ? '%#CursorLineNr#' . v:lnum : '%#LineNr#' . v:relnum %}  "
 
 -- ---------------------------------------------------------------------------
 -- Editing behavior
@@ -87,7 +95,8 @@ vim.opt.sidescrolloff = 8      -- Keep 8 columns visible when scrolling sideways
 -- vim.cmd("colorscheme carbonfox")
 -- vim.cmd("colorscheme NeoSolarized")
 -- vim.cmd("colorscheme rose-pine")
-vim.cmd.colorscheme("tokyonight-storm")
+vim.cmd.colorscheme("pycharm-dark")
+-- vim.cmd.colorscheme("tokyonight-storm")
 -- vim.cmd.colorscheme("tokyonight-night")
 -- vim.cmd.colorscheme("tokyonight-moon")
 -- vim.cmd.colorscheme("tokyonight")

@@ -12,6 +12,10 @@ return {
             }
         )
 
+        map.set('n', 'gd', fzf.lsp_definitions, options)
+        map.set('n', 'gD', fzf.lsp_declarations, options)
+        map.set('n', 'gI', fzf.lsp_implementations, options)
+        map.set('n', 'gy', fzf.lsp_typedefs, options)
         map.set('n', 'gr', fzf.lsp_references, options)
         map.set('n', '<C-q>', fzf.lsp_code_actions, options)
 

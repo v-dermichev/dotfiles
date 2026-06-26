@@ -72,6 +72,27 @@ return {
     vim.lsp.config("powershell_es", {})
     vim.lsp.config("astro", {})
 
+    -- Python: ty for type-checking / hover / completion, ruff for
+    -- linting, formatting and code actions. Both discover the active
+    -- interpreter from $VIRTUAL_ENV (see lua/config/venv.lua).
+    vim.lsp.config("ty", {
+      capabilities = capabilities,
+    })
+    vim.lsp.config("ruff", {
+      capabilities = capabilities,
+    })
+
+    -- Let ty own hover so it doesn't fight with ruff's (ruff only emits
+    -- "noqa" style hovers); keeps a single source of truth for K.
+    vim.api.nvim_create_autocmd("LspAttach", {
+      callback = function(args)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if client and client.name == "ruff" then
+          client.server_capabilities.hoverProvider = false
+        end
+      end,
+    })
+
     -- local jdtls_location = utils.get_jdtls_location();
     -- print("jdtls" .. jdtls_location)
     -- vim.lsp.config('jdtls', { cmd = { jdtls_location } })
