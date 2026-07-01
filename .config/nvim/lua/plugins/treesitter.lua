@@ -8,10 +8,14 @@ return {
   lazy = false, -- upstream: "This plugin does not support lazy-loading."
   build = ":TSUpdate",
   config = function()
+    -- `# language=<lang>` comment injection (registers the directive used by
+    -- after/queries/python/injections.scm before any buffer parses).
+    require("config.ts_inject").setup()
+
     local parsers = {
       "python", "c_sharp", "lua", "vim", "vimdoc",
       "json", "json5", "yaml", "toml", "ron",
-      "css", "html", "javascript", "typescript", "tsx",
+      "css", "html", "javascript", "typescript", "tsx", "sql",
       "rust", "bash", "markdown", "markdown_inline",
       "query", "regex", "diff", "gitcommit", "git_rebase",
     }

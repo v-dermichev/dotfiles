@@ -7,7 +7,11 @@ return {
   ---@module 'blink.cmp'
   ---@type blink.cmp.Config
   opts = {
-    keymap = { preset = 'super-tab' },
+    keymap = {
+      preset = 'super-tab',
+      ['<C-j>'] = { 'select_next', 'fallback' },
+      ['<C-k>'] = { 'select_prev', 'fallback' },
+    },
 
     appearance = {
       nerd_font_variant = 'mono'

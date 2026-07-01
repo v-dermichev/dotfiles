@@ -66,9 +66,9 @@ map.set('n', '<leader>r', function()
     return
   end
 
-  -- Default: .NET (C#).
-  local util = require('lspconfig.util')
-  local root_dir = util.root_pattern('*.csproj')(file)
+  -- Default: .NET (C#). Find the nearest ancestor holding a .csproj (built-in
+  -- vim.fs.root — no dependency on the deprecated lspconfig framework).
+  local root_dir = vim.fs.root(file, function(nm) return nm:match("%.csproj$") ~= nil end)
   if root_dir then
     -- run the project via dotnet
     local csproj = vim.fn.glob(root_dir .. '/*.csproj')

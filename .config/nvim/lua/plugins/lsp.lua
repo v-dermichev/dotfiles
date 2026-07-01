@@ -8,7 +8,6 @@ return {
   },
   config = function()
     local capabilities = vim.lsp.protocol.make_client_capabilities()
-    local lspconfig = require('lspconfig')
 
     -- Lua
     vim.lsp.config("lua_ls", {
@@ -45,6 +44,10 @@ return {
     vim.lsp.config("jsonls", {
       filetypes = { "json", "jsonc" },
     })
+
+    -- Embedded-language servers for otter.nvim (`# language=bash|sql` strings).
+    vim.lsp.config("bashls", { capabilities = capabilities })
+    vim.lsp.config("sqls", { capabilities = capabilities })
     vim.lsp.config("taplo", {
       root_markers = { "taplo.toml", ".taplo.toml", "pyproject.toml", "Cargo.toml", ".git" },
       settings = {

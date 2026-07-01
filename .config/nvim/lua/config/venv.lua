@@ -26,17 +26,17 @@ local function path_without(bin)
 end
 
 local function reload_python_lsp()
-  local has_python = false
+  local names = {}
   for _, client in ipairs(vim.lsp.get_clients()) do
     if client.name == "ty" or client.name == "ruff" then
-      has_python = true
-      break
+      names[#names + 1] = client.name
     end
   end
-  if has_python then
-    -- :LspRestart (from nvim-lspconfig) re-launches with the new env.
+  if #names > 0 then
+    -- `:lsp restart` (built-in; nvim-lspconfig's :LspRestart is deprecated)
+    -- re-launches the servers with the new env.
     vim.schedule(function()
-      pcall(vim.cmd, "LspRestart ty ruff")
+      pcall(vim.cmd, "lsp restart " .. table.concat(names, " "))
     end)
   end
 end
