@@ -30,7 +30,15 @@ return {
         local lang = vim.treesitter.language.get_lang(ft) or ft
         if lang and pcall(vim.treesitter.language.add, lang) then
           pcall(vim.treesitter.start, buf, lang)
-          vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          -- Treesitter indentation needs an `indents` query. Use it only when the
+          -- language ships one; otherwise indentexpr() returns 0 and <CR> drops to
+          -- column 0. C-family languages without one (c_sharp) fall back to cindent.
+          local cfamily = { c_sharp = true, c = true, cpp = true, java = true }
+          if vim.treesitter.query.get(lang, "indents") then
+            vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          elseif cfamily[lang] then
+            vim.bo[buf].cindent = true
+          end
         end
       end,
     })

@@ -78,8 +78,10 @@ hl("StatusLineNC",  { fg = c.comment, bg = c.bg_alt })
 hl("TabLine",       { fg = c.comment, bg = c.bg_alt })
 hl("TabLineSel",    { fg = c.fg, bg = c.bg })
 hl("TabLineFill",   { bg = c.bg_alt })
-hl("WinBar",        { fg = c.fg, bg = c.bg })
-hl("WinBarNC",      { fg = c.comment, bg = c.bg })
+hl("WinBar",        { fg = c.fg, bg = "#2b2d30" })
+hl("WinBarNC",      { fg = c.comment, bg = "#2b2d30" })
+hl("TermTabFill",   { bg = "#2b2d30" }) -- terminal tab-line background
+hl("TermFileLink",  { fg = c.func, underline = true }) -- file:line:col links in terminals
 hl("NonText",       { fg = c.nontext })
 hl("Whitespace",    { fg = c.nontext })
 hl("SpecialKey",    { fg = c.nontext })

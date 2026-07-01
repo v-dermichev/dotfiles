@@ -12,22 +12,25 @@ return {
             }
         )
 
-        map.set('n', 'gd', fzf.lsp_definitions, options)
-        map.set('n', 'gD', fzf.lsp_declarations, options)
-        map.set('n', 'gI', fzf.lsp_implementations, options)
-        map.set('n', 'gy', fzf.lsp_typedefs, options)
-        map.set('n', 'gr', fzf.lsp_references, options)
-        map.set('n', '<C-q>', fzf.lsp_code_actions, options)
+        -- LSP navigation (g-prefixed; already comfortable, left as-is).
+        map.set('n', 'gd', fzf.lsp_definitions,     { desc = "Go to definition" })
+        map.set('n', 'gD', fzf.lsp_declarations,    { desc = "Go to declaration" })
+        map.set('n', 'gI', fzf.lsp_implementations, { desc = "Go to implementation" })
+        map.set('n', 'gy', fzf.lsp_typedefs,        { desc = "Go to type definition" })
+        map.set('n', 'gr', fzf.lsp_references,      { desc = "References" })
 
-        map.set('n', '<C-p>', fzf.files, options)
-        map.set('n', '<C-g>', fzf.live_grep, options)
-        map.set('n', '<C-f>', fzf.grep_curbuf, options)
-
-        map.set('n', '<C-e>', function()
-            fzf.lsp_workspace_diagnostics({
-                severity_limit = 2 --warning
-            })
-        end, options)
+        -- Pickers — leader-based (fzf is the single finder; telescope keeps
+        -- only its role as neovim-project's picker).
+        map.set('n', '<leader>ff', fzf.files,       { desc = "Find files" })
+        map.set('n', '<leader>fg', fzf.live_grep,   { desc = "Live grep (project)" })
+        map.set('n', '<leader>fb', fzf.buffers,     { desc = "Buffers" })
+        map.set('n', '<leader>fl', fzf.grep_curbuf, { desc = "Grep current buffer" })
+        map.set('n', '<leader>fh', fzf.helptags,    { desc = "Help tags" })
+        map.set('n', '<leader>fr', fzf.resume,      { desc = "Resume last picker" })
+        map.set('n', '<leader>fd', function()
+            fzf.lsp_workspace_diagnostics({ severity_limit = 2 }) -- warning+
+        end, { desc = "Workspace diagnostics" })
+        map.set('n', '<leader>ca', fzf.lsp_code_actions, { desc = "Code actions" })
 
         fzf.register_ui_select();
     end
