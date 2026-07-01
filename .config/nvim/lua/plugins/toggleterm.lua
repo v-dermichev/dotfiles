@@ -6,12 +6,15 @@ return {
   keys = {
     { [[<C-\>]], function() require("config.term_tabs").toggle() end, mode = { "n", "t" }, desc = "Terminal: toggle" },
 
-    -- Numbered terminal "tabs" — swap in place, state preserved.
-    { "<leader>T1", function() require("config.term_tabs").show(1) end, mode = { "n", "t" }, desc = "Terminal tab 1" },
-    { "<leader>T2", function() require("config.term_tabs").show(2) end, mode = { "n", "t" }, desc = "Terminal tab 2" },
-    { "<leader>T3", function() require("config.term_tabs").show(3) end, mode = { "n", "t" }, desc = "Terminal tab 3" },
-    { "<leader>T4", function() require("config.term_tabs").show(4) end, mode = { "n", "t" }, desc = "Terminal tab 4" },
-    { "<leader>T5", function() require("config.term_tabs").show(5) end, mode = { "n", "t" }, desc = "Terminal tab 5" },
+    -- Numbered terminal "tabs" — swap in place, state preserved. Normal-mode
+    -- only: a terminal-mode <leader> (space) map stalls every spacebar press for
+    -- `timeoutlen` while nvim waits for the rest of the sequence. In terminal
+    -- mode use <S-h>/<S-l> to cycle, or <Esc> then <leader>T#.
+    { "<leader>T1", function() require("config.term_tabs").show(1) end, desc = "Terminal tab 1" },
+    { "<leader>T2", function() require("config.term_tabs").show(2) end, desc = "Terminal tab 2" },
+    { "<leader>T3", function() require("config.term_tabs").show(3) end, desc = "Terminal tab 3" },
+    { "<leader>T4", function() require("config.term_tabs").show(4) end, desc = "Terminal tab 4" },
+    { "<leader>T5", function() require("config.term_tabs").show(5) end, desc = "Terminal tab 5" },
 
     -- New / lazygit (cycling is bound buffer-locally to <S-h>/<S-l> inside terminals).
     { "<leader>Tn", function() require("config.term_tabs").new()     end, desc = "Terminal: new tab" },
@@ -26,7 +29,6 @@ return {
       if term.direction == "horizontal" then return 12
       elseif term.direction == "vertical" then return vim.o.columns * 0.4 end
     end,
-    open_mapping = [[<C-\>]],
     shade_terminals = true,
     start_in_insert = true,
     persist_size = true,
@@ -41,21 +43,9 @@ return {
     vim.api.nvim_create_autocmd("TermOpen", {
       pattern = "term://*toggleterm#*",
       callback = function()
-        local o = { buffer = 0 }
-        vim.keymap.set("t", "<esc>", [[<C-\><C-n>]],        o)
-        vim.keymap.set("t", "<C-h>", [[<Cmd>wincmd h<CR>]], o)
-        vim.keymap.set("t", "<C-j>", [[<Cmd>wincmd j<CR>]], o)
-        vim.keymap.set("t", "<C-k>", [[<Cmd>wincmd k<CR>]], o)
-        vim.keymap.set("t", "<C-l>", [[<Cmd>wincmd l<CR>]], o)
-
-        -- Cycle between terminal tabs, both in terminal and normal mode inside the terminal buffer.
-        for _, mode in ipairs({ "n", "t" }) do
-          vim.keymap.set(mode, "<S-h>", function() require("config.term_tabs").cycle(-1) end,
-            { buffer = 0, desc = "Terminal: prev tab" })
-          vim.keymap.set(mode, "<S-l>", function() require("config.term_tabs").cycle(1) end,
-            { buffer = 0, desc = "Terminal: next tab" })
-        end
-
+        -- Escape, pane nav, tab cycling, and gf / Ctrl-click file:line:col
+        -- links — the same set the slot's debug/test panes get.
+        require("config.term_tabs").apply_term_local_maps(0)
         -- Show the terminal tab list as a winbar.
         vim.wo.winbar = "%!v:lua.require('config.term_tabs').winbar()"
       end,

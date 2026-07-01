@@ -19,6 +19,7 @@ local GLYPH_TERM    = "\xef\x92\x89"  -- nf-oct-terminal  (U+F489)
 local GLYPH_GIT     = "\xef\x87\x92"  -- nf-fa-code_fork  (U+F1D2)
 local GLYPH_DEBUG   = "\xef\x86\x88"  -- nf-fa-bug        (U+F188)
 local GLYPH_TEST    = "\xef\x83\x83"  -- nf-fa-flask      (U+F0C3)
+local GLYPH_RUN     = "\xef\x81\x8b"  -- nf-fa-play       (U+F04B)
 local GLYPH_CLOSE   = "\xef\x80\x8d"  -- nf-fa-times      (U+F00D)
 local SLANT_LEFT    = "\xee\x82\xb8"  -- pl-left_soft_divider  (U+E0B8)
 local SLANT_RIGHT   = "\xee\x82\xba"  -- pl-right_soft_divider (U+E0BA)
@@ -72,11 +73,48 @@ local function set_term_winbar(win)
   vim.wo[win].winbar = DAP_WINBAR
 end
 
+-- Highlight `path.ext:line[:col]` tokens as links in terminal/output panes.
+-- A file extension is required so it doesn't light up times or ip:port.
+local LINK_PAT = [=[[0-9A-Za-z_/+-]\+\.[A-Za-z]\+:\d\+\(:\d\+\)\?]=]
+local link_autocmd_set = false
+
+-- matchadd is window-local, so it must be (re)applied for every window that
+-- shows a link buffer — including when a slot pane is reopened in a new window.
+local function ensure_link_highlight(buf)
+  vim.b[buf].term_links = true
+  for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+    vim.api.nvim_win_call(win, function()
+      if not vim.w.term_link_match then
+        pcall(vim.fn.matchadd, "TermFileLink", LINK_PAT)
+        vim.w.term_link_match = true
+      end
+    end)
+  end
+  if link_autocmd_set then return end
+  link_autocmd_set = true
+  vim.api.nvim_set_hl(0, "TermFileLink", { default = true, fg = "#56a8f5", underline = true })
+  vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter" }, {
+    group = vim.api.nvim_create_augroup("TermFileLinks", { clear = true }),
+    callback = function()
+      if vim.b.term_links and not vim.w.term_link_match then
+        pcall(vim.fn.matchadd, "TermFileLink", LINK_PAT)
+        vim.w.term_link_match = true
+      end
+    end,
+  })
+end
+
 local function apply_term_local_maps(buf)
+  -- Resolve 0 / nil to the real buffer number: the keymap API accepts 0 as
+  -- "current", but vim.b[0] / win_findbuf(0) treat it as literal buffer 0.
+  if buf == nil or buf == 0 then buf = vim.api.nvim_get_current_buf() end
   local o = { buffer = buf }
-  vim.keymap.set("t", "<esc>", [[<C-\><C-n>]], o)
+  vim.keymap.set("t", "<esc>", [[<C-\><C-n>]], vim.tbl_extend("force", o, { desc = "Terminal: to normal mode" }))
+  local dir_name = { h = "left", j = "down", k = "up", l = "right" }
   for _, lhs in ipairs({ "<C-h>", "<C-j>", "<C-k>", "<C-l>" }) do
-    vim.keymap.set("t", lhs, ("<Cmd>wincmd %s<CR>"):format(lhs:sub(4, 4)), o)
+    local d = lhs:sub(4, 4)
+    vim.keymap.set("t", lhs, ("<Cmd>wincmd %s<CR>"):format(d),
+      vim.tbl_extend("force", o, { desc = "Window: " .. dir_name[d] }))
   end
   for _, mode in ipairs({ "n", "t" }) do
     vim.keymap.set(mode, "<S-h>", function() M.cycle(-1) end, { buffer = buf, desc = "Terminal: prev tab" })
@@ -86,7 +124,12 @@ local function apply_term_local_maps(buf)
   vim.keymap.set("n", "gf", function() M.goto_file_cursor() end, { buffer = buf, desc = "Open file:line under cursor" })
   vim.keymap.set("n", "gF", function() M.goto_file_cursor() end, { buffer = buf, desc = "Open file:line under cursor" })
   vim.keymap.set({ "n", "t" }, "<C-LeftMouse>", function() M.goto_file_mouse() end, { buffer = buf, desc = "Open file:line under mouse" })
+  ensure_link_highlight(buf)
 end
+
+-- Exposed so the numbered toggleterm terminals get the same terminal-local
+-- maps (esc/nav/cycle + gf / Ctrl-click file:line:col links) as the slot panes.
+M.apply_term_local_maps = apply_term_local_maps
 
 local function hide_all_open()
   for _, t in pairs(terms().get_all(true)) do
@@ -160,6 +203,41 @@ function M.new()
   M.show(next_id)
 end
 
+-- Dedicated "run" tab: run an arbitrary shell command in its own bottom-slot
+-- tab (registered as an external tab, so it shows a "run" winbar tab and cycles
+-- with the rest) instead of the numbered terminals — that way it never clobbers
+-- whatever you're doing in terminal 1. The command is sent to a persistent,
+-- interactive shell (not run as the terminal's own process) so the pane stays a
+-- live terminal after it finishes — a dead job's terminal closes on the next
+-- keypress, which looked like the pane "crashing". Re-running reuses the shell.
+function M.run(cmd)
+  prune_ext()
+  local i = ext_index("run")
+  local e = i and M._ext[i] or nil
+  local alive = e ~= nil and e.buf ~= nil and vim.api.nvim_buf_is_valid(e.buf)
+    and e.job ~= nil and vim.fn.jobwait({ e.job }, 0)[1] == -1
+  if alive then
+    M.show_ext("run") -- bring the run shell into the slot
+    vim.fn.chansend(e.job, cmd .. "\n")
+    return
+  end
+  -- First run, or the previous shell died: (re)create it.
+  if e then
+    if e.win and vim.api.nvim_win_is_valid(e.win) then pcall(vim.api.nvim_win_close, e.win, false) end
+    if e.buf and vim.api.nvim_buf_is_valid(e.buf) then pcall(vim.api.nvim_buf_delete, e.buf, { force = true }) end
+    table.remove(M._ext, i)
+  end
+  local height = slot_height()
+  hide_all_open()
+  vim.cmd("botright " .. height .. "new")
+  local buf = vim.api.nvim_get_current_buf()
+  -- Run the command immediately (no send-vs-shell-startup race), then exec an
+  -- interactive shell so the pane stays a live terminal afterwards.
+  local job = vim.fn.jobstart(cmd .. "; exec " .. vim.o.shell, { term = true })
+  vim.bo[buf].buflisted = false
+  M.register_ext({ key = "run", glyph = GLYPH_RUN, label = "run", buf = buf, job = job, follow = true })
+end
+
 -- ── External slot tabs (debug terminal, test output) ────────────────────
 -- Bring an already-registered external buffer back into the bottom slot.
 function M.show_ext(key)
@@ -172,16 +250,20 @@ function M.show_ext(key)
     if vim.api.nvim_win_get_buf(w) == e.buf then
       e.win = w
       vim.api.nvim_set_current_win(w)
+      if e.on_show then pcall(e.on_show, w) end
       if e.follow then scroll_bottom(w) end
       return
     end
   end
   local height = slot_height()
   hide_all_open()
-  vim.cmd("belowright " .. height .. "split")
+  vim.cmd("botright " .. height .. "split")
   vim.api.nvim_win_set_buf(0, e.buf)
   e.win = vim.api.nvim_get_current_win()
   set_term_winbar(e.win)
+  -- Let the owner re-sync any window-bound state to the new slot window
+  -- (e.g. octo's file panel tracks its own winid for cursor/navigation).
+  if e.on_show then pcall(e.on_show, e.win) end
   if e.follow then scroll_bottom(e.win) end
 end
 
@@ -195,19 +277,29 @@ function M.scroll_ext_bottom(key)
   end
 end
 
--- Create a fresh slot window for an external tab and return (win, buf) so the
--- caller (e.g. nvim-dap) can run its process inside it.
+-- Create a fresh slot window for an external tab and return (buf, win) so the
+-- caller can run its process inside it. The order matches nvim-dap's
+-- terminal_win_cmd contract (create_terminal_buf expects buffer first).
 function M.open_ext_win(spec)
+  -- Restore focus to the code window afterwards: nvim-dap creates this slot at
+  -- session start but jumps to the stopped frame's source in the *current*
+  -- window later — if we left focus here, it would load the source over the
+  -- debug terminal instead of using the code window.
+  local prev = vim.api.nvim_get_current_win()
   local height = slot_height()
   hide_all_open()
-  vim.cmd("belowright " .. height .. "new")
+  vim.cmd("botright " .. height .. "new")
   spec.win = vim.api.nvim_get_current_win()
   spec.buf = vim.api.nvim_get_current_buf()
+  vim.bo[spec.buf].buflisted = false -- keep the debug terminal out of the bufferline
   local i = ext_index(spec.key)
   if i then M._ext[i] = spec else table.insert(M._ext, spec) end
   set_term_winbar(spec.win)
   apply_term_local_maps(spec.buf)
-  return spec.win, spec.buf
+  if vim.api.nvim_win_is_valid(prev) then
+    pcall(vim.api.nvim_set_current_win, prev)
+  end
+  return spec.buf, spec.win
 end
 
 -- Register an external buffer that some plugin just opened in the current
@@ -247,7 +339,7 @@ end
 function M.open_panel_slot()
   local height = slot_height()
   hide_all_open()
-  vim.cmd("belowright " .. height .. "split")
+  vim.cmd("botright " .. height .. "split")
 end
 
 -- nvim-dap's terminal_win_cmd entry point.
@@ -328,7 +420,7 @@ function M.winbar()
     local x     = ("%%#%s#%s "):format(hl_tab, GLYPH_CLOSE)
     local right = ("%%#%s#%s"):format(hl_sep, SLANT_RIGHT)
     table.insert(parts, click .. body .. "%X" .. close .. x .. "%X" .. right)
-    table.insert(parts, "%#BufferLineFill# ")
+    table.insert(parts, "%#TermTabFill# ")
   end
 
   for i, id in ipairs(ids) do
@@ -346,7 +438,7 @@ function M.winbar()
       ("%%%d@v:lua.TermExtClose@"):format(i))
   end
 
-  table.insert(parts, "%#BufferLineFill#")
+  table.insert(parts, "%#TermTabFill#")
   return table.concat(parts, "")
 end
 
@@ -451,14 +543,19 @@ local function open_token(text, col)
     return
   end
   local win = main_code_win()
-  if win then
-    vim.api.nvim_set_current_win(win)
-  else
+  if not win then
     vim.cmd("aboveleft vsplit")
+    win = vim.api.nvim_get_current_win()
   end
-  vim.cmd("edit " .. vim.fn.fnameescape(path))
-  pcall(vim.api.nvim_win_set_cursor, 0, { tok.lnum or 1, math.max((tok.col or 1) - 1, 0) })
-  vim.cmd("normal! zz")
+  -- Display the file via the window/buffer API rather than `:edit`, so a
+  -- modified buffer in the target window isn't abandoned (which errors E37).
+  local target = vim.fn.bufadd(path)
+  vim.fn.bufload(target)
+  vim.bo[target].buflisted = true
+  vim.api.nvim_win_set_buf(win, target)
+  vim.api.nvim_set_current_win(win)
+  pcall(vim.api.nvim_win_set_cursor, win, { tok.lnum or 1, math.max((tok.col or 1) - 1, 0) })
+  vim.api.nvim_win_call(win, function() vim.cmd("normal! zz") end)
 end
 
 function M.goto_file_cursor()

@@ -14,7 +14,42 @@ return {
     { "<leader>db",  function() require("dap").toggle_breakpoint() end,                            desc = "DAP: toggle breakpoint" },
     { "<leader>dB",  function() require("dap").set_breakpoint(vim.fn.input("Condition: ")) end,     desc = "DAP: conditional breakpoint" },
     { "<leader>dc",  function() require("dap").continue() end,                                      desc = "DAP: continue" },
+    { "<leader>dP",  function() require("dap").pause() end,                                         desc = "DAP: pause running program" },
     { "<F5>",        function() require("dap").continue() end,                                      desc = "DAP: continue" },
+    { "<leader>dd",  function()
+        local file = vim.fn.expand("%:p")
+        vim.cmd("w") -- save current file
+        if vim.bo.filetype ~= "python" then
+          -- Non-Python: fall back to picking a configured launch config.
+          require("dap").continue()
+          return
+        end
+        -- Launch the current file under debugpy as a module from the project
+        -- root (module + cwd/PYTHONPATH) so intra-package imports resolve —
+        -- same reasoning as <leader>r. Falls back to launching by path when the
+        -- location can't form a valid dotted module name.
+        local marker = vim.fs.find(
+          { "pyproject.toml", "setup.py", "setup.cfg", ".git", ".venv" },
+          { path = vim.fs.dirname(file), upward = true }
+        )[1]
+        local root = marker and vim.fs.dirname(marker) or vim.fs.dirname(file)
+        local module = file:sub(#root + 2):gsub("%.py$", ""):gsub("[/\\]", ".")
+        local runnable_module = #module > 0
+        for seg in module:gmatch("[^.]+") do
+          if not seg:match("^[%a_][%w_]*$") then runnable_module = false end
+        end
+        local config = {
+          type = "python",
+          request = "launch",
+          name = "Debug current file",
+          cwd = root,
+          env = { PYTHONPATH = root },
+          console = "integratedTerminal",
+          justMyCode = false,
+        }
+        if runnable_module then config.module = module else config.program = file end
+        require("dap").run(config)
+      end, desc = "DAP: debug current file" },
     { "<leader>di",  function() require("dap").step_into() end,                                     desc = "DAP: step into" },
     { "<F11>",       function() require("dap").step_into() end,                                     desc = "DAP: step into" },
     { "<leader>do",  function() require("dap").step_over() end,                                     desc = "DAP: step over" },
@@ -111,6 +146,43 @@ return {
     dap.listeners.after.event_initialized.dbg_panes = function() vim.schedule(register_dbg_panes) end
     dap.listeners.before.event_terminated.dbg_panes = function() vim.schedule(clear_dbg_panes) end
     dap.listeners.before.event_exited.dbg_panes = function() vim.schedule(clear_dbg_panes) end
+
+    -- Floating control widget (top-right): clickable continue/pause/step/
+    -- terminate buttons with hover hints, shown for the life of the session.
+    local ctrl = function(fn) return function() vim.schedule(function() require("config.dap_controls")[fn]() end) end end
+    dap.listeners.after.event_initialized.controls = ctrl("open")
+    dap.listeners.before.event_terminated.controls = ctrl("close")
+    dap.listeners.before.event_exited.controls     = ctrl("close")
+
+    -- nvim-dap deliberately skips the jump-to-source on a `pause` stop
+    -- (session.event_stopped: should_jump = reason ~= 'pause'). Do it ourselves
+    -- so pausing reveals where execution stopped. Focus a real code window
+    -- first, so the jump (switchbuf=uselast) lands there, not in the debug slot.
+    dap.listeners.after.event_stopped.jump_on_pause = function(_, body)
+      if not (body and body.reason == "pause") then return end
+      local function code_win()
+        for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+          if vim.api.nvim_win_get_config(w).relative == "" then
+            local b = vim.api.nvim_win_get_buf(w)
+            if vim.bo[b].buftype == "" and vim.api.nvim_buf_get_name(b) ~= "" then return w end
+          end
+        end
+      end
+      local tries = 0
+      local function jump()
+        local s = dap.session()
+        if not s then return end
+        if s.current_frame then
+          local w = code_win()
+          if w then pcall(vim.api.nvim_set_current_win, w) end
+          pcall(dap.focus_frame)
+        elseif tries < 20 then
+          tries = tries + 1
+          vim.defer_fn(jump, 40)
+        end
+      end
+      vim.schedule(jump)
+    end
 
     vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError", numhl = "" })
     vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn", numhl = "" })
