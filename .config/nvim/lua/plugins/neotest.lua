@@ -10,6 +10,7 @@ return {
     "antoinemadec/FixCursorHold.nvim",
     "nvim-treesitter/nvim-treesitter",
     "nvim-neotest/neotest-python",
+    "Nsidorenco/neotest-vstest",
   },
   keys = {
     { "<leader>tr", function() require("neotest").run.run() end,                       desc = "Test: run nearest (under cursor)" },
@@ -24,10 +25,15 @@ return {
     { "]t",         function() require("neotest").jump.next({ status = "failed" }) end, desc = "Test: next failed" },
     { "[t",         function() require("neotest").jump.prev({ status = "failed" }) end, desc = "Test: prev failed" },
   },
-  -- Load when a Python file is opened (not only on first <leader>t key) so the
-  -- gutter test markers appear without having to run a test first.
-  ft = { "python" },
+  -- Load when a Python or C# file is opened (not only on first <leader>t key)
+  -- so the gutter test markers appear without having to run a test first.
+  ft = { "python", "cs" },
   config = function()
+    -- neotest-vstest reads its options from this global, so set it before the
+    -- adapter is required below. Point test debugging at the `coreclr` adapter
+    -- already registered in lua/plugins/dap.lua (its default type is netcoredbg).
+    vim.g.neotest_vstest = { dap_settings = { type = "coreclr" } }
+
     local nio = require("nio")
     -- Captured at consumer init so the FileType autocmd below can force
     -- discovery of a freshly-opened buffer (which boots the client and makes
@@ -40,6 +46,10 @@ return {
           runner = "pytest",
           dap = { justMyCode = false },
         }),
+        -- C# / .NET via VSTest — framework-agnostic (NUnit/xUnit/MSTest), auto-
+        -- discovers the solution, and debugs a test through the coreclr adapter
+        -- (see dap_settings above + lua/plugins/dap.lua).
+        require("neotest-vstest"),
       },
       -- The output panel is a terminal buffer; open it into the shared bottom
       -- terminal slot (managed by config.term_tabs) so it appears as a "tests"
@@ -68,10 +78,10 @@ return {
       },
     })
 
-    -- On opening a Python file, force discovery of its tests so the gutter
-    -- markers render immediately instead of only after the first run.
+    -- On opening a Python or C# file, force discovery of its tests so the
+    -- gutter markers render immediately instead of only after the first run.
     vim.api.nvim_create_autocmd("FileType", {
-      pattern = "python",
+      pattern = { "python", "cs" },
       callback = function(ev)
         local file = vim.api.nvim_buf_get_name(ev.buf)
         if file == "" then return end

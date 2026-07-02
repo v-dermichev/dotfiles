@@ -85,9 +85,9 @@ return {
     dapui.setup()
     require("nvim-dap-virtual-text").setup()
 
-    -- Installs debugpy and registers the python adapter via mason.
+    -- Installs debugpy (python) and netcoredbg (coreclr / C#) via mason.
     require("mason-nvim-dap").setup({
-      ensure_installed = { "python" },
+      ensure_installed = { "python", "coreclr" },
       automatic_installation = true,
       handlers = {},
     })
@@ -98,6 +98,50 @@ return {
     -- `integratedTerminal` sends the debuggee's stdio to a real terminal
     -- buffer (rather than the dap-ui console), so it lands in the pane below.
     require("dap-python").setup(debugpy, { console = "integratedTerminal" })
+
+    -- ── C# / .NET via netcoredbg (adapter type "coreclr") ──────────────────
+    -- Prefer mason's binary; fall back to one on $PATH.
+    local netcoredbg = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg"
+    if vim.fn.executable(netcoredbg) == 0 then netcoredbg = "netcoredbg" end
+    dap.adapters.coreclr = {
+      type = "executable",
+      command = netcoredbg,
+      args = { "--interpreter=vscode" },
+    }
+
+    -- Auto-pick the built DLL from the nearest .csproj (newest build under
+    -- bin/), so launching a C# target rarely needs a typed path; prompt only
+    -- when nothing is built yet (run `dotnet build` first).
+    local function dll_path()
+      local from = vim.fs.dirname(vim.fn.expand("%:p"))
+      local csproj = vim.fs.find(function(n) return n:match("%.csproj$") end,
+        { upward = true, path = from, type = "file", limit = 1 })[1]
+      local proj_dir = csproj and vim.fs.dirname(csproj) or vim.fn.getcwd()
+      local name = csproj and vim.fn.fnamemodify(csproj, ":t:r")
+      local hits = vim.fn.glob(proj_dir .. "/bin/**/" .. (name and name .. ".dll" or "*.dll"), false, true)
+      table.sort(hits, function(a, b) return vim.fn.getftime(a) > vim.fn.getftime(b) end)
+      if hits[1] then return hits[1] end
+      return vim.fn.input("Path to dll: ", proj_dir .. "/bin/Debug/", "file")
+    end
+
+    -- `continue()` for a .cs buffer (via <leader>dd / <leader>dc / F5) picks
+    -- one of these; the launch config auto-resolves the DLL above.
+    dap.configurations.cs = {
+      {
+        type = "coreclr",
+        name = "Launch (netcoredbg)",
+        request = "launch",
+        program = dll_path,
+        cwd = "${workspaceFolder}",
+        stopAtEntry = false,
+      },
+      {
+        type = "coreclr",
+        name = "Attach to process",
+        request = "attach",
+        processId = require("dap.utils").pick_process,
+      },
+    }
 
     -- Spawn that terminal in the numbered terminals' single bottom slot,
     -- registered as a "debug" tab in the terminal winbar (swaps in place).
