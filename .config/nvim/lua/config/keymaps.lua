@@ -79,6 +79,114 @@ map.set('n', '<leader>r', function()
   end
 end, { noremap = true, silent = true, desc = "Run current file (python / dotnet)" })
 
+-- Yank the *rendered* selection: real buffer text with virtual text woven in
+-- (inlay hints and inline dap-virtual-text at their columns, eol/diagnostic
+-- virt_text appended at line end, virt_lines as their own lines). Virtual text
+-- lives in extmarks and is normally invisible to a plain `y`; this composes what
+-- you actually see on screen and puts it in the yank register.
+local function chunks_to_str(chunks)
+  local parts = {}
+  for _, c in ipairs(chunks or {}) do parts[#parts + 1] = c[1] end
+  return table.concat(parts)
+end
+
+local function yank_rendered()
+  local buf = 0
+  local vpos, cpos = vim.fn.getpos("v"), vim.fn.getpos(".")
+  local mode = vim.fn.mode()
+  local linewise = mode == "V"
+  local blockwise = mode == "\22" -- <C-v>
+  local rtype = linewise and "V" or (blockwise and "b" or "v")
+
+  -- Normalised, 0-based selection bounds (end col inclusive).
+  local sr, sc = vpos[2] - 1, vpos[3] - 1
+  local er, ec = cpos[2] - 1, cpos[3] - 1
+  if sr > er or (sr == er and sc > ec) then
+    sr, sc, er, ec = er, ec, sr, sc
+  end
+
+  -- Real text, correct for charwise/linewise/blockwise and multibyte.
+  local real = vim.fn.getregion(vpos, cpos, { type = rtype })
+
+  -- Bucket the extmarks overlapping the row range by kind.
+  local inline_by_row, eol_by_row, vlines_by_row = {}, {}, {}
+  local marks = vim.api.nvim_buf_get_extmarks(buf, -1, { sr, 0 }, { er, -1 }, { details = true })
+  for _, m in ipairs(marks) do
+    local row, col, d = m[2], m[3], m[4]
+    if d.virt_text and #d.virt_text > 0 then
+      local pos = d.virt_text_pos
+      if pos == "inline" or pos == "overlay" then
+        inline_by_row[row] = inline_by_row[row] or {}
+        table.insert(inline_by_row[row], { col = col, text = chunks_to_str(d.virt_text) })
+      else -- eol / right_align (and the eol default)
+        eol_by_row[row] = eol_by_row[row] or {}
+        table.insert(eol_by_row[row], chunks_to_str(d.virt_text))
+      end
+    end
+    if d.virt_lines and #d.virt_lines > 0 then
+      vlines_by_row[row] = vlines_by_row[row] or {}
+      table.insert(vlines_by_row[row], { above = d.virt_lines_above, lines = d.virt_lines })
+    end
+  end
+
+  local out = {}
+  for i, text in ipairs(real) do
+    local row = sr + i - 1
+    local full = vim.fn.getline(row + 1)
+    local a, b -- selected byte window [a, b) of the full line
+    if linewise then
+      a, b = 0, #full
+    elseif blockwise then
+      a, b = sc, ec + 1
+    else
+      a = (row == sr) and sc or 0
+      b = (row == er) and (ec + 1) or #full
+    end
+
+    -- virt_lines attached above this row.
+    for _, vl in ipairs(vlines_by_row[row] or {}) do
+      if vl.above then
+        for _, ln in ipairs(vl.lines) do out[#out + 1] = chunks_to_str(ln) end
+      end
+    end
+
+    -- Inline/overlay virt_text inside the selected window, spliced right-to-left
+    -- so earlier insertions don't shift later byte offsets.
+    local composed = text
+    local ins = {}
+    for _, vt in ipairs(inline_by_row[row] or {}) do
+      if vt.col >= a and vt.col <= b then ins[#ins + 1] = vt end
+    end
+    table.sort(ins, function(x, y) return x.col > y.col end)
+    for _, vt in ipairs(ins) do
+      local at = math.max(0, math.min(vt.col - a, #composed))
+      composed = composed:sub(1, at) .. vt.text .. composed:sub(at + 1)
+    end
+
+    -- eol virt_text only when the selection reaches the end of the real line.
+    if b >= #full then
+      for _, t in ipairs(eol_by_row[row] or {}) do composed = composed .. t end
+    end
+    out[#out + 1] = composed
+
+    -- virt_lines attached below this row.
+    for _, vl in ipairs(vlines_by_row[row] or {}) do
+      if not vl.above then
+        for _, ln in ipairs(vl.lines) do out[#out + 1] = chunks_to_str(ln) end
+      end
+    end
+  end
+
+  local reg = (vim.v.register ~= "" and vim.v.register) or '"'
+  vim.fn.setreg(reg, out, linewise and "V" or "v")
+  if vim.o.clipboard:find("unnamedplus") then vim.fn.setreg("+", out) end
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
+  vim.notify(("Yanked %d line(s) with virtual text"):format(#out))
+end
+
+map.set("x", "<leader>yv", yank_rendered,
+  vim.tbl_extend("force", options, { desc = "Yank selection incl. virtual text" }))
+
 local function escape(str)
   -- You need to escape these characters to work correctly
   local escape_chars = [[;,."|\]]

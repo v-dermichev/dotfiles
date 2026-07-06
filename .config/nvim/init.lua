@@ -17,6 +17,15 @@ if vim.g.neovide then
     vim.g.neovide_cursor_animation_length = 0.05
     vim.g.neovide_scroll_animation_length = 0.1
     vim.g.neovide_remember_window_size = true
+
+    -- Ctrl+scroll to zoom the font, like a terminal/browser.
+    vim.g.neovide_scale_factor = 1.0
+    local function change_scale(delta)
+        local new = vim.g.neovide_scale_factor + delta
+        vim.g.neovide_scale_factor = math.max(0.5, math.min(new, 3.0))
+    end
+    vim.keymap.set({ "n", "i", "v", "t" }, "<C-ScrollWheelUp>", function() change_scale(0.1) end, { desc = "Neovide: zoom in" })
+    vim.keymap.set({ "n", "i", "v", "t" }, "<C-ScrollWheelDown>", function() change_scale(-0.1) end, { desc = "Neovide: zoom out" })
 end
 
 -- ---------------------------------------------------------------------------

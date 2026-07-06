@@ -49,7 +49,7 @@ local function hl(group, opts) vim.api.nvim_set_hl(0, group, opts) end
 hl("Normal",        { fg = c.fg, bg = c.bg })
 hl("NormalNC",      { fg = c.fg, bg = c.bg })
 hl("NormalFloat",   { fg = c.fg, bg = c.bg_alt })
-hl("FloatBorder",   { fg = c.border, bg = c.bg_alt })
+hl("FloatBorder",   { fg = c.fg, bg = c.bg_alt })     -- match blink's (NormalFloat) border tone
 hl("FloatTitle",    { fg = c.fg, bg = c.bg_alt, bold = true })
 hl("ColorColumn",   { bg = "#26282c" }) -- faint line-length ruler
 hl("Cursor",        { fg = c.bg, bg = c.fg })
@@ -230,6 +230,24 @@ hl("SnacksIndentScope", { fg = "#4a4d54" })
 hl("IblIndent",         { fg = "#2c2e33" })
 hl("IblScope",          { fg = "#4a4d54" })
 hl("AerialLine",        { bg = c.cursorline })
+
+-- satellite.nvim scrollbar: a soft grey thumb like PyCharm's, over a
+-- transparent track, with overlay marks tinted from the diagnostic/git/search
+-- palette so they read the same as their gutter/virtual-text counterparts.
+hl("SatelliteBar",               { bg = c.paren })       -- thumb
+hl("SatelliteBackground",        {})                     -- track (transparent)
+hl("SatelliteCursor",            { fg = c.gutter_cur })
+hl("SatelliteSearch",            { fg = "#b09650" })      -- matches Search
+hl("SatelliteSearchCurrent",     { fg = c.keyword })      -- matches CurSearch
+hl("SatelliteDiagnosticError",   { fg = c.error })
+hl("SatelliteDiagnosticWarn",    { fg = c.warn })
+hl("SatelliteDiagnosticInfo",    { fg = c.info })
+hl("SatelliteDiagnosticHint",    { fg = c.hint })
+hl("SatelliteGitSignsAdd",       { fg = c.add })
+hl("SatelliteGitSignsChange",    { fg = c.change })
+hl("SatelliteGitSignsDelete",    { fg = c.delete })
+hl("SatelliteMark",              { fg = c.func })
+hl("SatelliteQuickfix",          { fg = c.decorator })
 
 -- ── Terminal ANSI palette ────────────────────────────────────────────────
 vim.g.terminal_color_0  = "#27282b"

@@ -6,6 +6,12 @@ export PATH="$PATH:/home/work/.local/share/JetBrains/Toolbox/scripts"
 export PATH="$PATH:/home/work/Android/Sdk/platform-tools"
 export PATH="$PATH:/home/work/Android/Sdk/emulator"
 
+export SUDO_EDITOR="nvim"
+export VISUAL="nvim"
+export EDITOR="nvim"
+
+export COLORTERM=truecolor
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time Oh My Zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
@@ -415,3 +421,6 @@ export NVM_DIR="$HOME/.nvm"
 # OpenClaw Completion
 # source "/home/work/.openclaw/completions/openclaw.zsh"
 export LC_TIME="C.UTF-8"
+
+aflmac() { AUTOSSH_GATETIME=0 autossh -M 0 -t afl '/opt/homebrew/bin/tmux new -A -s vdermichev'; }
+aflwin() { AUTOSSH_GATETIME=0 autossh -M 0 -t aflwin 'tmux new -A -s vdermichev'; }

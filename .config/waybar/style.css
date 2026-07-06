@@ -72,6 +72,8 @@ window#waybar.hidden {
 #workspaces button.obsidian.active { color: rgba(163, 132, 214, 1.0); }
 #workspaces button.music { color: rgba(230, 180, 50, 0.5); }
 #workspaces button.music.active { color: #e6b432; }
+#workspaces button.tests { color: rgba(132, 196, 132, 0.5); }
+#workspaces button.tests.active { color: #84c484; }
 
 /* Spacing */
 #window { margin: 0 4px; }

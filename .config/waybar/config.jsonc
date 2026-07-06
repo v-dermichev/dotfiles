@@ -55,10 +55,12 @@
             "special:messenger": "",
             "special:telegram": "󰒊",
             "special:obsidian": "󱓧",
+            "special:tests": "󰙨",
             "music": "󰎇",
             "messenger": "",
             "telegram": "󰒊",
             "obsidian": "󰹕",
+            "tests": "󰙨",
             "default": "{name}"
         },
         "show-special": true,

@@ -136,11 +136,25 @@ local function hide_all_open()
     if t:is_open() then t:close() end
   end
   -- External tabs share the slot, so hide their windows too (keep buffers).
+  -- Close *every* window currently showing a registered slot buffer, not just the
+  -- one last recorded in e.win: a buffer's owner can re-display it in a fresh
+  -- window without going through us (e.g. neotest reopening its output panel,
+  -- whose one-shot FileType hook never re-registers the new window), leaving
+  -- e.win stale. Scanning by buffer clears the slot reliably so the next pane
+  -- swaps in place instead of stacking a second split on the orphaned window.
   for _, e in ipairs(M._ext) do
-    if e.win and vim.api.nvim_win_is_valid(e.win) then
+    if e.buf and vim.api.nvim_buf_is_valid(e.buf) then
+      for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if vim.api.nvim_win_is_valid(w)
+          and vim.api.nvim_win_get_config(w).relative == ""
+          and vim.api.nvim_win_get_buf(w) == e.buf then
+          pcall(vim.api.nvim_win_close, w, false)
+        end
+      end
+    elseif e.win and vim.api.nvim_win_is_valid(e.win) then
       pcall(vim.api.nvim_win_close, e.win, false)
-      e.win = nil
     end
+    e.win = nil
   end
 end
 

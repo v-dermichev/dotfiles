@@ -1,8 +1,13 @@
 return {
   "coffebar/neovim-project",
+  keys = {
+    { "<leader>pd", "<cmd>NeovimProjectDiscover<cr>", desc = "Project: discover" },
+    { "<leader>ph", "<cmd>NeovimProjectHistory<cr>", desc = "Project: history" },
+  },
   opts = {
     projects = { -- define project roots
       "~/projects/*",
+      "~/repos/**",
       "~/.config/*",
     },
     picker = {

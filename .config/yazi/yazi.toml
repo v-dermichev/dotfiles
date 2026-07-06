@@ -4,16 +4,42 @@ sort_reverse = true
 linemode = "mtime"
 
 [opener]
+extract = [
+    { run = 'd="${1%.tar.*}"; d="${d%.*}"; mkdir -p "$d" && ouch decompress "$1" -d "$d"', desc = "Extract into subfolder", for = "unix" },
+]
+extract_here = [
+    { run = 'ouch decompress "$@"', desc = "Extract here (current dir)", for = "unix" },
+]
+archive_view = [
+    { run = 'ouch list "$1" | less', block = true, desc = "List contents", for = "unix" },
+]
+archive_test = [
+    { run = 'ouch list "$1" >/dev/null && echo "OK: $1" || echo "FAIL: $1"; read', block = true, desc = "Test archive", for = "unix" },
+]
 edit = [
     { run = 'nvim "$@"', block = true, for = "unix" },
 ]
+edit_image = [
+    { run = 'gimp "$@"', orphan = true, desc = "Edit in GIMP" },
+]
+paint = [
+    { run = 'krita "$@"', orphan = true, desc = "Paint in Krita" },
+]
 
 [[plugin.prepend_fetchers]]
-id  = "git"
-url = "*"
-run = "git"
+url   = "*"
+run   = "git"
+group = "git"
 
 [[plugin.prepend_fetchers]]
-id  = "git"
-url = "*/"
-run = "git"
+url   = "*/"
+run   = "git"
+group = "git"
+
+
+[open]
+prepend_rules = [
+    { mime = "image/*", use = ["open", "edit_image", "paint", "reveal"] },
+    { mime = "application/{,g}zip", use = ["extract", "extract_here", "archive_view", "reveal"] },
+    { mime = "application/x-{tar,bzip*,7z*,xz,rar}", use = ["extract", "extract_here", "archive_view", "reveal"] },
+]

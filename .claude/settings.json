@@ -6,5 +6,7 @@
     "type": "command",
     "command": "sh ~/.claude/statusline-command.sh"
   },
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "editorMode": "vim",
+  "agentPushNotifEnabled": true
 }

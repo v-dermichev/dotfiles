@@ -13,6 +13,23 @@ return {
   keys = {
     { "<leader>db",  function() require("dap").toggle_breakpoint() end,                            desc = "DAP: toggle breakpoint" },
     { "<leader>dB",  function() require("dap").set_breakpoint(vim.fn.input("Condition: ")) end,     desc = "DAP: conditional breakpoint" },
+    { "<leader>dh",  function() require("dap").set_breakpoint(nil, vim.fn.input("Hit count: "), nil) end, desc = "DAP: hit-count breakpoint" },
+    { "<leader>dX",  function() require("dap").clear_breakpoints() end,                             desc = "DAP: clear all breakpoints" },
+    { "<leader>dx",  function()
+        -- Break on exceptions, picking from the adapter's advertised filters
+        -- (clreval offers "all" / "user-unhandled"; exceptionInfo fills the stop).
+        local dap = require("dap")
+        local s = dap.session()
+        local filters = s and s.capabilities and s.capabilities.exceptionBreakpointFilters
+        if filters and #filters > 0 then
+          local labels = vim.tbl_map(function(f) return f.label or f.filter end, filters)
+          vim.ui.select(labels, { prompt = "Break on exceptions:" }, function(_, idx)
+            if idx then dap.set_exception_breakpoints({ filters[idx].filter }) end
+          end)
+        else
+          dap.set_exception_breakpoints({ "user-unhandled" })
+        end
+      end, desc = "DAP: break on exceptions (pick filter)" },
     { "<leader>dc",  function() require("dap").continue() end,                                      desc = "DAP: continue" },
     { "<leader>dP",  function() require("dap").pause() end,                                         desc = "DAP: pause running program" },
     { "<F5>",        function() require("dap").continue() end,                                      desc = "DAP: continue" },
@@ -55,9 +72,13 @@ return {
     { "<leader>do",  function() require("dap").step_over() end,                                     desc = "DAP: step over" },
     { "<F10>",       function() require("dap").step_over() end,                                     desc = "DAP: step over" },
     { "<leader>dO",  function() require("dap").step_out() end,                                      desc = "DAP: step out" },
+    { "<leader>dR",  function() require("dap").run_to_cursor() end,                                 desc = "DAP: run to cursor" },
+    { "<leader>dk",  function() require("dap").up() end,                                            desc = "DAP: stack frame up (caller)" },
+    { "<leader>dj",  function() require("dap").down() end,                                          desc = "DAP: stack frame down (callee)" },
     { "<leader>dr",  function() require("dap").repl.toggle() end,                                   desc = "DAP: toggle REPL" },
     { "<leader>dl",  function() require("dap").run_last() end,                                      desc = "DAP: run last" },
-    { "<leader>dt",  function() require("dap").terminate() end,                                     desc = "DAP: terminate" },
+    { "<leader>dt",  function() require("dap").terminate() end,                                     desc = "DAP: terminate (kill debuggee)" },
+    { "<leader>dD",  function() require("dap").disconnect({ terminateDebuggee = false }) end,       desc = "DAP: detach (leave debuggee running)" },
     { "<leader>du",  function() require("config.term_tabs").show_ext("dap_scopes") end,              desc = "DAP: scopes pane" },
     { "<leader>de",  function() require("dapui").eval() end, mode = { "n", "v" },                   desc = "DAP: eval (under cursor)" },
     { "<leader>dE",  function()
@@ -82,8 +103,36 @@ return {
     -- buffer live via the dap client — independent of any window. We never
     -- open dap-ui's own sidebar/tray; instead each element buffer is shown as
     -- a tab in the shared bottom terminal slot (see register_dbg_panes below).
-    dapui.setup()
+    -- In the stacks panel, dap-ui only binds `open` (jump to frame, default `o`)
+    -- and `toggle` (show/hide subtle frames, default `t`) — it never registers the
+    -- `expand` action that `<CR>` defaults to, so Enter does nothing there. Add
+    -- `<CR>` to `open` for the stacks element only, so Enter jumps to the frame
+    -- under the cursor (variable expansion in scopes/watches keeps `<CR>` = expand).
+    dapui.setup({
+      element_mappings = {
+        stacks = { open = { "o", "<CR>" } },
+      },
+    })
     require("nvim-dap-virtual-text").setup()
+
+    -- nvim-dap has no VimLeavePre handler, so quitting nvim mid-session leaves an
+    -- ATTACHED debuggee running (a neotest-vstest test host is a grandchild of nvim
+    -- and reparents to init → orphan). Terminate the session on exit so the adapter
+    -- kills the debuggee (clreval honors `terminate` / `disconnect{terminateDebuggee}`
+    -- as of v0.0.34). `vim.wait` gives the async request a moment to flush before
+    -- nvim tears the adapter job down.
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+      group = vim.api.nvim_create_augroup("dap_terminate_on_exit", { clear = true }),
+      callback = function()
+        local ok, dap = pcall(require, "dap")
+        if ok and dap.session() then
+          pcall(dap.terminate)
+          vim.wait(500, function()
+            return dap.session() == nil
+          end, 25)
+        end
+      end,
+    })
 
     -- Installs debugpy (python) and netcoredbg (coreclr / C#) via mason.
     require("mason-nvim-dap").setup({
@@ -142,6 +191,38 @@ return {
         processId = require("dap.utils").pick_process,
       },
     }
+
+    -- clreval — the from-scratch, evaluation-first CoreCLR adapter (~/repos/clreval,
+    -- run `cargo build --release` first). Launch -> breakpoint -> inspect real
+    -- locals -> override -> evaluate full C# expressions in the eval box -> continue.
+    -- Supports: stepping (in/over/out, just-my-code, async-await), conditional +
+    -- hit-count breakpoints, full-expression evaluate (member/call/index/new/cast/
+    -- operators) + setExpression, exception breakpoints + exceptionInfo, collection/
+    -- ToString/[DebuggerDisplay] rendering, eval-cancel, and debuggee stdout as DAP
+    -- `output` events (shown in the repl pane — clreval does not runInTerminal). Not
+    -- supported: data breakpoints, and completions (Roslyn Phase C, in progress) —
+    -- each honestly refused, never faked. Reuses the same .csproj DLL auto-resolver.
+    dap.adapters.clreval = {
+      type = "executable",
+      command = vim.fn.expand("~/repos/clreval/target/release/clreval"),
+      args = { "--dap" },
+    }
+    table.insert(dap.configurations.cs, {
+      type = "clreval",
+      name = "Launch (clreval — experimental)",
+      request = "launch",
+      program = dll_path,
+    })
+    -- Debug an NUnit/xUnit test with clreval: in a terminal run
+    --   VSTEST_HOST_DEBUG=1 dotnet test --filter <YourTest>
+    -- it prints "Process Id: NNNN" and waits; pick this and enter NNNN. clreval
+    -- attaches, you land on a "pause" stop → continue → your test breakpoint hits.
+    table.insert(dap.configurations.cs, {
+      type = "clreval",
+      name = "Attach to test host pid (clreval — VSTEST_HOST_DEBUG=1)",
+      request = "attach",
+      processId = function() return tonumber(vim.fn.input("test host pid: ")) end,
+    })
 
     -- Spawn that terminal in the numbered terminals' single bottom slot,
     -- registered as a "debug" tab in the terminal winbar (swaps in place).

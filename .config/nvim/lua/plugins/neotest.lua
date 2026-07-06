@@ -16,7 +16,14 @@ return {
     { "<leader>tr", function() require("neotest").run.run() end,                       desc = "Test: run nearest (under cursor)" },
     { "<leader>tf", function() require("neotest").run.run(vim.fn.expand("%")) end,      desc = "Test: run file" },
     { "<leader>ta", function() require("neotest").run.run(vim.fn.getcwd()) end,         desc = "Test: run all" },
-    { "<leader>td", function() require("neotest").run.run({ strategy = "dap" }) end,    desc = "Test: debug nearest" },
+    { "<leader>td", function() require("neotest").run.run({ strategy = "dap" }) end,    desc = "Test: debug nearest (clreval)" },
+    -- Same debug-nearest, but forces the OLD debugger (netcoredbg) for this one
+    -- run via a one-shot override the strategy wrapper below consumes — for
+    -- comparing clreval against netcoredbg on the identical test/breakpoint.
+    { "<leader><leader>td", function()
+        vim.g.neotest_vstest_debug_backend = { type = "coreclr", request = "attach" }
+        require("neotest").run.run({ strategy = "dap" })
+      end, desc = "Test: debug nearest (netcoredbg — comparison)" },
     { "<leader>tl", function() require("neotest").run.run_last() end,                   desc = "Test: run last" },
     { "<leader>tx", function() require("neotest").run.stop() end,                       desc = "Test: stop" },
     { "<leader>ts", function() require("neotest").summary.toggle() end,                 desc = "Test: summary panel" },
@@ -30,9 +37,37 @@ return {
   ft = { "python", "cs" },
   config = function()
     -- neotest-vstest reads its options from this global, so set it before the
-    -- adapter is required below. Point test debugging at the `coreclr` adapter
-    -- already registered in lua/plugins/dap.lua (its default type is netcoredbg).
-    vim.g.neotest_vstest = { dap_settings = { type = "coreclr" } }
+    -- adapter is required below. `<leader>td` (strategy="dap") starts the test
+    -- host in debug-wait mode and attaches this adapter by pid, releasing the
+    -- host after configurationDone — so it runs straight to the breakpoint.
+    -- clreval consumes the attach-synchronization pause and lands on the first
+    -- real stop (v0.0.16), which is why it fits here. To fall back to netcoredbg,
+    -- set type = "coreclr" (and drop `request`, which coreclr infers).
+    vim.g.neotest_vstest = {
+      dap_settings = { type = "clreval", request = "attach" },
+      -- The result-file wait is a fixed wall-clock timeout that keeps counting
+      -- while the test host is paused at a breakpoint under `<leader>td`. The
+      -- default 150s trips mid-debug (e.g. while inspecting the DAP Scopes
+      -- panel), throwing an nio "result file does not exist" assert even though
+      -- the run is healthy — just halted. Raise it past any realistic pause.
+      timeout_ms = 30 * 60 * 1000, -- 30 min
+    }
+
+    -- neotest-vstest bakes its dap `type` at adapter-construction time, so a plain
+    -- runtime swap can't retarget the backend. The debug strategy factory is,
+    -- however, `require`d fresh for every debug run — so wrap that module once and
+    -- let it apply a ONE-SHOT backend override (set by `<leader><leader>td`),
+    -- consumed on the next spec build. This keeps a single registered adapter
+    -- (no duplicate discovery trees) while allowing a per-run backend choice.
+    local orig_debugger = require("neotest-vstest.strategies.vstest_debugger")
+    package.loaded["neotest-vstest.strategies.vstest_debugger"] = function(dap_config)
+      local override = vim.g.neotest_vstest_debug_backend
+      vim.g.neotest_vstest_debug_backend = nil -- one-shot: applies to this run only
+      if override then
+        dap_config = vim.tbl_extend("force", dap_config, override)
+      end
+      return orig_debugger(dap_config)
+    end
 
     local nio = require("nio")
     -- Captured at consumer init so the FileType autocmd below can force

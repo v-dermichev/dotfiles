@@ -45,6 +45,28 @@ return {
       filetypes = { "json", "jsonc" },
     })
 
+    -- YAML. schemaStore stays on so generic YAML (compose, actions, k8s)
+    -- still auto-resolves; the explicit `schemas` map pins GitLab CI files to
+    -- GitLab's own schema (fresher than the SchemaStore mirror). customTags
+    -- whitelists the `!reference` tag GitLab CI uses, which yamlls otherwise
+    -- flags as an unknown-tag error.
+    vim.lsp.config("yamlls", {
+      capabilities = capabilities,
+      settings = {
+        yaml = {
+          schemaStore = { enable = true, url = "https://www.schemastore.org/api/json/catalog.json" },
+          schemas = {
+            ["https://gitlab.com/gitlab-org/gitlab/-/raw/master/app/assets/javascripts/editor/schema/ci.json"] =
+              { ".gitlab-ci.yml", "*.gitlab-ci.yml" },
+          },
+          customTags = { "!reference sequence" },
+          validate = true,
+          completion = true,
+          hover = true,
+        },
+      },
+    })
+
     -- Embedded-language servers for otter.nvim (`# language=bash|sql` strings).
     vim.lsp.config("bashls", { capabilities = capabilities })
     vim.lsp.config("sqls", { capabilities = capabilities })
@@ -74,6 +96,21 @@ return {
     })
     vim.lsp.config("powershell_es", {})
     vim.lsp.config("astro", {})
+
+    -- Markdown (remark-language-server). It requests workspace configuration
+    -- under the "remark" section on every document; neovim answers null when
+    -- no settings exist, and the server's unified-language-server core then
+    -- crashes on `Boolean(raw.requireConfig)` (null deref), quitting on every
+    -- .md open. Supplying the section — requireConfig=false so it lints
+    -- without demanding a .remarkrc — gives it a non-null object to read.
+    vim.lsp.config("remark_ls", {
+      capabilities = capabilities,
+      settings = {
+        remark = {
+          requireConfig = false,
+        },
+      },
+    })
 
     -- Python: ty for type-checking / hover / completion, ruff for
     -- linting, formatting and code actions. Both discover the active

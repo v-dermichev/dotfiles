@@ -42,24 +42,104 @@ return {
     },
   },
   init = function()
-    -- Auto-open the sidebar on start, then hand focus back to the editor so
-    -- the cursor lands in your file, not the tree. Skipped when nvim is
-    -- piped stdin (e.g. `git` / `man` opening a scratch buffer).
+    local group = vim.api.nvim_create_augroup("NeotreeAutoOpen", { clear = true })
+
+    local TREE_WIDTH = 32 -- keep in sync with opts.window.width below
+
+    -- Force a deterministic docked layout: neo-tree pinned to the far left,
+    -- an editor pane to its right, cursor in the editor. The autoload race
+    -- (session restore + async neo-tree open) can otherwise leave the tree on
+    -- the right or as the only window; this normalizes whatever it produced.
+    local function normalize_layout()
+      local tree, editor
+      for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == "neo-tree" then
+          tree = w
+        else
+          editor = editor or w
+        end
+      end
+
+      -- No editor pane (collapsed session / no-arg launch): split an empty one.
+      if not editor then
+        vim.cmd("botright vsplit | enew")
+        editor = vim.api.nvim_get_current_win()
+      end
+
+      -- Tree not leftmost: shove it to the far left and restore its width.
+      if tree and vim.api.nvim_win_get_position(tree)[2] ~= 0 then
+        vim.api.nvim_set_current_win(tree)
+        vim.cmd("wincmd H")
+        pcall(vim.api.nvim_win_set_width, tree, TREE_WIDTH)
+      end
+
+      -- Land the cursor in the editor, not the tree.
+      if vim.api.nvim_win_is_valid(editor) then
+        vim.api.nvim_set_current_win(editor)
+      end
+    end
+
+    -- Open the docked sidebar via "focus" (not "show" — "show" triggers
+    -- neo-tree's async hop-back callback, which crashes with "Invalid window
+    -- id" when the captured startup window is gone), then normalize. The
+    -- second pass runs after neo-tree's own deferred callback re-grabs the
+    -- tree, so the final state is tree-left / cursor-in-editor.
+    local function open_sidebar()
+      -- Root the tree at the current cwd. On the VimEnter pass this is still
+      -- the launch dir, but the SessionLoadPost pass runs after the session's
+      -- `cd`, so it re-roots the (already-open) tree onto the restored project
+      -- instead of leaving it showing $HOME. Passing `dir` re-navigates even
+      -- when neo-tree is already open.
+      require("neo-tree.command").execute({
+        action = "focus",
+        position = "left",
+        dir = vim.fn.getcwd(),
+      })
+      vim.schedule(function()
+        normalize_layout()
+        vim.schedule(normalize_layout)
+      end)
+    end
+
+    -- Auto-open on start. Skipped when nvim is piped stdin (git/man scratch
+    -- buffer). When a session is autoloaded (neovim-project), it replaces the
+    -- whole layout on VimEnter and fires User SessionLoadPost, which re-opens
+    -- the tree below — so a VimEnter open here is harmless/idempotent.
     vim.api.nvim_create_autocmd("VimEnter", {
-      group = vim.api.nvim_create_augroup("NeotreeAutoOpen", { clear = true }),
+      group = group,
       callback = function()
         if vim.fn.argc() == -1 then return end -- reading from stdin
         local first = vim.fn.argv(0)
-        -- If nvim was launched on a directory, neo-tree already takes over;
-        -- otherwise show the sidebar and return to the file window.
+        -- If nvim was launched on a directory, neo-tree already takes over.
         if type(first) == "string" and vim.fn.isdirectory(first) == 1 then
           require("neo-tree.command").execute({ action = "show", position = "left", dir = first })
         else
-          require("neo-tree.command").execute({ action = "show", position = "left" })
-          vim.schedule(function()
-            pcall(vim.cmd.wincmd, "p") -- jump back to previous (editor) window
-          end)
+          open_sidebar()
         end
+      end,
+    })
+
+    -- neovim-project / session-manager force-deletes every buffer and
+    -- re-sources the saved layout when loading a project (both at startup and
+    -- on a runtime switch), which drops the tree. Re-open it fresh once the
+    -- session has finished loading.
+    vim.api.nvim_create_autocmd("User", {
+      group = group,
+      pattern = "SessionLoadPost",
+      callback = function()
+        vim.schedule(open_sidebar)
+      end,
+    })
+
+    -- Don't persist neo-tree windows into the session file — they restore as
+    -- broken empty panes. Close them before the session is written.
+    vim.api.nvim_create_autocmd("User", {
+      group = group,
+      pattern = "SessionSavePre",
+      callback = function()
+        pcall(function()
+          require("neo-tree.command").execute({ action = "close" })
+        end)
       end,
     })
   end,
