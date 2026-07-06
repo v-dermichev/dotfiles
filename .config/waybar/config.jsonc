@@ -33,9 +33,7 @@
     ],
     "hyprland/workspaces": {
         "persistent-workspaces": {
-            "8": [],
-            "Windows": [],
-            "IDE": []
+            "8": []
         },
         "format": "{icon}",
         "format-icons": {
@@ -48,7 +46,7 @@
             "7": "7",
             "8": "8",
             "9": "9",
-            "IDE": "󰨞",
+            "IDE": "",
             "Steam": "󰓓",
             "Windows": "",
             "special:music": "󰎆",

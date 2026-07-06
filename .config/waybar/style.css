@@ -74,6 +74,8 @@ window#waybar.hidden {
 #workspaces button.music.active { color: #e6b432; }
 #workspaces button.tests { color: rgba(132, 196, 132, 0.5); }
 #workspaces button.tests.active { color: #84c484; }
+#workspaces button.ide { color: rgba(99, 172, 59, 0.9); }
+#workspaces button.ide.active { color: #63ac3b; }
 
 /* Spacing */
 #window { margin: 0 4px; }
