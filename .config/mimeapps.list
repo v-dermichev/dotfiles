@@ -1,0 +1,45 @@
+[Default Applications]
+x-scheme-handler/jetbrains=jetbrainsd.desktop
+x-scheme-handler/tg=userapp-Telegram Desktop-1F9TM3.desktop
+x-scheme-handler/tonsite=userapp-Telegram Desktop-3UFUM3.desktop
+x-scheme-handler/postman=Postman.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=onlyoffice-desktopeditors.desktop
+application/x-zerosize=nvim.desktop
+application/x-shellscript=kitty.desktop
+x-scheme-handler/mailto=userapp-Thunderbird-6T7MM3.desktop
+message/rfc822=userapp-Thunderbird-6T7MM3.desktop
+x-scheme-handler/mid=userapp-Thunderbird-6T7MM3.desktop
+x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+x-scheme-handler/ychat=ychat-ignore.desktop
+x-scheme-handler/bruno=bruno.desktop
+image/png=imv.desktop
+image/jpeg=imv.desktop
+image/webp=imv.desktop
+image/gif=imv.desktop
+image/tiff=imv.desktop
+image/bmp=imv.desktop
+x-scheme-handler/trueconf=trueconf.desktop
+image/x-png=imv.desktop
+image/jpg=imv.desktop
+image/pjpeg=imv.desktop
+image/x-bmp=imv.desktop
+image/tiff-fx=imv.desktop
+image/avif=imv.desktop
+image/heif=imv.desktop
+image/heic=imv.desktop
+image/jxl=imv.desktop
+image/svg+xml=imv.desktop
+image/qoi=imv.desktop
+image/x-farbfeld=imv.desktop
+
+[Added Associations]
+x-scheme-handler/tg=userapp-Telegram Desktop-1F9TM3.desktop;
+x-scheme-handler/tonsite=userapp-Telegram Desktop-3UFUM3.desktop;
+application/xml=nvim.desktop;
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=onlyoffice-desktopeditors.desktop;nvim.desktop;
+application/x-zerosize=nvim.desktop;
+x-scheme-handler/mailto=userapp-Thunderbird-6T7MM3.desktop;
+x-scheme-handler/mid=userapp-Thunderbird-6T7MM3.desktop;
+application/x-shellscript=nvim.desktop;
+text/markdown=nvim.desktop;
+application/json=nvim.desktop;

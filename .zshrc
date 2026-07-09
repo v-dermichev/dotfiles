@@ -319,6 +319,8 @@ _dotfiles_complete() {
 }
 compdef _dotfiles_complete dotfiles
 
+alias lazydotfiles='lazygit --git-dir="$HOME/.dotfiles" --work-tree="$HOME"'
+
 pacman-arch() {
     local tmp=$(mktemp)
     cat /etc/pacman.conf > "$tmp"
