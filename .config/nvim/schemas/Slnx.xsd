@@ -1,0 +1,247 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="Solution">
+        <xs:annotation>
+            <xs:documentation>Root element for an XML Visual Studio solution file (.slnx). Contains projects, folders, solution configurations, and persisted solution properties.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="Configurations" type="Configurations" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Declares solution-wide build configurations, platforms, and custom project type rules.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="Project" type="Project" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>References a project included at the solution root. Use Path for the project file path relative to the .slnx file.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="Folder" type="Folder" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>Defines a solution folder. Folders can contain projects, solution files, and persisted properties.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:group ref="PropertiesGroup" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:choice>
+            <xs:attribute name="Description" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Optional text description for the solution.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="Version" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Optional .slnx format version written by SolutionPersistence.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="Configurations">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="BuildType" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Declares a solution build type such as Debug or Release.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:attribute name="Name" type="xs:string" use="required">
+                        <xs:annotation>
+                            <xs:documentation>Name of the solution build type.</xs:documentation>
+                        </xs:annotation>
+                    </xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name ="Platform" minOccurs="0" maxOccurs="unbounded" >
+                <xs:annotation>
+                    <xs:documentation>Declares a solution platform such as Any CPU, x64, or x86.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:attribute name="Name" type="xs:string" use="required">
+                        <xs:annotation>
+                            <xs:documentation>Name of the solution platform.</xs:documentation>
+                        </xs:annotation>
+                    </xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="ProjectType" type="ProjectType" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Defines metadata and configuration behavior for a project type used in the solution.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="ProjectType">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:group ref="ConfigurationRulesGroup" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:choice>
+        <xs:attribute name="TypeId" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>Project type identifier, typically a GUID.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="Name" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>Friendly project type name.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="Extension" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>File extension associated with this project type.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="BasedOn" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>Name or identifier of another project type whose behavior this type inherits.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="IsBuildable" type="xs:boolean" default="true" use="optional">
+            <xs:annotation>
+                <xs:documentation>Whether projects of this type participate in solution builds by default.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="SupportsPlatform" type="xs:boolean" default="true" use="optional">
+            <xs:annotation>
+                <xs:documentation>Whether projects of this type use platform mappings.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="Folder">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="File" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Solution item file contained in a solution folder.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:attribute name="Path" type="xs:string" use="required">
+                        <xs:annotation>
+                            <xs:documentation>Path to the solution item file, relative to the .slnx file.</xs:documentation>
+                        </xs:annotation>
+                    </xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Project" type="Project" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:group ref="PropertiesGroup" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:choice>
+        <xs:attribute name="Name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>Solution folder name displayed in Solution Explorer.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="Project">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="BuildDependency" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Declares that this project depends on another project for solution build ordering.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:attribute name="Project" use="required">
+                        <xs:annotation>
+                            <xs:documentation>Referenced project path or identifier for the dependency.</xs:documentation>
+                        </xs:annotation>
+                    </xs:attribute>
+                </xs:complexType>
+            </xs:element>
+            <xs:group ref="ConfigurationRulesGroup" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:group ref="PropertiesGroup" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:choice>
+        <xs:attribute name="Path" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>Path to the project file, relative to the .slnx file.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="Type" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>Optional project type name or extension override.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="DisplayName" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>Optional display name shown instead of the project file name.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:group name="PropertiesGroup">
+        <xs:choice>
+            <xs:element name="Properties">
+                <xs:annotation>
+                    <xs:documentation>Named collection of persisted solution, project, or folder properties.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Property" minOccurs="0" maxOccurs="unbounded">
+                            <xs:annotation>
+                                <xs:documentation>Single persisted property entry.</xs:documentation>
+                            </xs:annotation>
+                            <xs:complexType>
+                                <xs:attribute name="Name" type="xs:string" use="required">
+                                    <xs:annotation>
+                                        <xs:documentation>Property name.</xs:documentation>
+                                    </xs:annotation>
+                                </xs:attribute>
+                                <xs:attribute name="Value" type="xs:string">
+                                    <xs:annotation>
+                                        <xs:documentation>Property value.</xs:documentation>
+                                    </xs:annotation>
+                                </xs:attribute>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                    <xs:attribute name="Name" use="required">
+                        <xs:annotation>
+                            <xs:documentation>Name of the property bag.</xs:documentation>
+                        </xs:annotation>
+                    </xs:attribute>
+                    <xs:attribute name="Scope" fixed="PostLoad">
+                        <xs:annotation>
+                            <xs:documentation>Property bag scope. PostLoad properties are applied after loading the solution model.</xs:documentation>
+                        </xs:annotation>
+                    </xs:attribute>
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+    </xs:group>
+
+    <xs:group name="ConfigurationRulesGroup">
+        <xs:choice>
+            <xs:element name="BuildType" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Maps a solution build type to a project build type.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:attribute name="Solution" type="xs:string" use="optional" />
+                    <xs:attribute name="Project" type="xs:string" use="optional" />
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Platform" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Maps a solution platform to a project platform.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:attribute name="Solution" type="xs:string" use="optional" />
+                    <xs:attribute name="Project" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Build" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Controls whether a project builds for a solution configuration or platform.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:attribute name="Solution" type="xs:string" use="optional" />
+                    <xs:attribute name="Project" type="xs:string" use="optional" />
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Deploy" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Controls whether a project deploys for a solution configuration or platform.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:attribute name="Solution" type="xs:string" use="optional" />
+                    <xs:attribute name="Project" type="xs:string" use="optional" />
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+    </xs:group>
+</xs:schema>

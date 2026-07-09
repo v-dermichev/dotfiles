@@ -7,7 +7,8 @@ return {
   opts = {
     projects = { -- define project roots
       "~/projects/*",
-      "~/repos/**",
+      "~/repos/*",
+      "~/repos/*/*",
       "~/.config/*",
     },
     picker = {

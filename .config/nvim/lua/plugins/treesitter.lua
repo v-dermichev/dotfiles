@@ -14,7 +14,7 @@ return {
 
     local parsers = {
       "python", "c_sharp", "lua", "vim", "vimdoc",
-      "json", "json5", "yaml", "toml", "ron",
+      "json", "json5", "yaml", "toml", "ron", "xml",
       "css", "html", "javascript", "typescript", "tsx", "sql",
       "rust", "bash", "markdown", "markdown_inline",
       "query", "regex", "diff", "gitcommit", "git_rebase",

@@ -4,6 +4,14 @@ require("config.options")
 require("config.venv").setup()
 require("config.line_length").setup()
 
+vim.filetype.add({
+  extension = {
+    axaml = "xml",
+    csproj = "xml",
+    slnx = "xml",
+  },
+})
+
 -- vim.opt.clipboard = { "unnamed", "unnamedplus" } -- Use system clipboard as the default registers
 vim.opt.clipboard = { "unnamedplus" } -- Use system clipboard as the default registers
 
@@ -270,4 +278,3 @@ vim.lsp.enable("astro")
 vim.lsp.enable("tsserver")
 vim.lsp.enable("rust_analyzer")
 vim.lsp.enable('jdtls')
-

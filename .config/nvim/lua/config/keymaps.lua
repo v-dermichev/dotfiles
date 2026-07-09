@@ -10,7 +10,14 @@ map.set('v', '<S-Tab>', '<', vim.tbl_extend("force", options, { desc = "Outdent 
 map.set("n", "<C-_>", "gccj_", { desc = "Toggle comment for current line", remap = true })
 map.set('v', "<C-_>", "gc", { desc = "Toggle comment for current selection", remap = true })
 
+if vim.g.neovide then
+  map.set("n", "<C-/>", "gccj_", { desc = "Toggle comment for current line", remap = true })
+  map.set('v', "<C-/>", "gc", { desc = "Toggle comment for current selection", remap = true })
+end
+
 map.set("n", "<A-CR>", vim.lsp.buf.code_action, vim.tbl_extend("force", options, { desc = "Code action (intentions)" }))
+map.set("n", "K", vim.lsp.buf.hover, vim.tbl_extend("force", options, { desc = "LSP hover" }))
+map.set("n", "<leader>D", vim.diagnostic.open_float, vim.tbl_extend("force", options, { desc = "Diagnostic float" }))
 
 -- Toggle LSP inlay hints for current buffer
 map.set("n", "<leader>ih", function()

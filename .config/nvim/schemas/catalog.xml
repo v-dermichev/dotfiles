@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+  <system
+    systemId="https://raw.githubusercontent.com/dotnet/msbuild/main/src/MSBuild/MSBuild/Microsoft.Build.CommonTypes.xsd"
+    uri="Microsoft.Build.CommonTypes.xsd" />
+  <system
+    systemId="https://raw.githubusercontent.com/dotnet/msbuild/main/src/MSBuild/MSBuild/Microsoft.Build.Core.xsd"
+    uri="Microsoft.Build.Core.xsd" />
+  <system
+    systemId="https://raw.githubusercontent.com/microsoft/vs-solutionpersistence/main/src/Microsoft.VisualStudio.SolutionPersistence/Serializer/Xml/Slnx.xsd"
+    uri="Slnx.xsd" />
+</catalog>

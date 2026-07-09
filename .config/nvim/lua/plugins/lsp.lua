@@ -8,6 +8,10 @@ return {
   },
   config = function()
     local capabilities = vim.lsp.protocol.make_client_capabilities()
+    local has_blink, blink = pcall(require, "blink.cmp")
+    if has_blink then
+      capabilities = blink.get_lsp_capabilities(capabilities)
+    end
 
     -- Lua
     vim.lsp.config("lua_ls", {
@@ -174,20 +178,34 @@ return {
       end,
     })
 
+    local nvim_config = vim.fn.stdpath("config")
+
     vim.lsp.config("lemminx", {
-      filetypes = { "xml", "axaml", "xsd", "xslt", "csproj" },
+      filetypes = { "xml", "axaml", "xsd", "xslt", "csproj", "slnx" },
+      settings = {
+        xml = {
+          catalogs = {
+            nvim_config .. "/schemas/catalog.xml",
+          },
+          fileAssociations = {
+            {
+              pattern = "**/*.csproj",
+              systemId = nvim_config .. "/schemas/Microsoft.Build.CommonTypes.xsd",
+            },
+            {
+              pattern = "**/*.slnx",
+              systemId = nvim_config .. "/schemas/Slnx.xsd",
+            },
+          },
+        },
+      },
     })
+    vim.lsp.enable("lemminx")
 
     vim.lsp.config("editorconfig-checker", {
       filetypes = { ".editorconfig" },
     })
 
-    vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-      pattern = "*.axaml",
-      callback = function()
-        vim.bo.filetype = "xml"
-      end,
-    })
     --
   end
 }

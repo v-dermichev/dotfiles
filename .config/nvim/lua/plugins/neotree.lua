@@ -25,9 +25,24 @@ return {
       position = "left",
       width = 32, -- fixed slice of the left side
       mappings = {
-        ["l"] = "open", -- unfold dir / open file
+        ["q"] = { "quick_open", nowait = true }, -- launch default xdg app, floating
+        ["Q"] = { "quick_open_tiled", nowait = true }, -- launch default xdg app, tiled
+        ["l"] = "open", -- unfold dir / open file in editor
         ["h"] = "close_node", -- fold dir
+        ["o"] = { "open_with", nowait = true }, -- xdg "open with" menu; launches floating
+        ["O"] = "open_split", -- open file in a horizontal neovim split
       },
+    },
+    commands = {
+      open_with = function(state)
+        require("config.open_with").open_with(state)
+      end,
+      quick_open = function(state)
+        require("config.open_with").quick(state, { float = true })
+      end,
+      quick_open_tiled = function(state)
+        require("config.open_with").quick(state, { float = false })
+      end,
     },
     filesystem = {
       follow_current_file = { enabled = true, leave_dirs_open = true },

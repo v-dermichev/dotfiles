@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+  <xs:element name="Project">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="PropertyGroup" type="PropertyGroupType" />
+        <xs:element name="ItemGroup" type="ItemGroupType" />
+        <xs:element name="ItemDefinitionGroup" type="ItemGroupType" />
+        <xs:element name="Target" type="TargetType" />
+        <xs:element name="Import" type="ImportType" />
+        <xs:element name="ImportGroup" type="ImportGroupType" />
+        <xs:element name="Choose" type="ChooseType" />
+        <xs:element name="UsingTask" type="UsingTaskType" />
+        <xs:element name="ProjectExtensions" type="OpenType" />
+        <xs:element name="Sdk" type="SdkType" />
+      </xs:choice>
+      <xs:attribute name="Sdk" type="xs:string" />
+      <xs:attribute name="DefaultTargets" type="xs:string" />
+      <xs:attribute name="InitialTargets" type="xs:string" />
+      <xs:attribute name="ToolsVersion" type="xs:string" />
+      <xs:anyAttribute processContents="skip" />
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="PropertyGroupType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:any processContents="skip" />
+    </xs:choice>
+    <xs:attribute name="Condition" type="xs:string" />
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+
+  <xs:complexType name="ItemGroupType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:any processContents="skip" />
+    </xs:choice>
+    <xs:attribute name="Condition" type="xs:string" />
+    <xs:attribute name="Label" type="xs:string" />
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+
+  <xs:complexType name="TargetType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:any processContents="skip" />
+    </xs:choice>
+    <xs:attribute name="Name" type="xs:string" use="required" />
+    <xs:attribute name="Condition" type="xs:string" />
+    <xs:attribute name="DependsOnTargets" type="xs:string" />
+    <xs:attribute name="BeforeTargets" type="xs:string" />
+    <xs:attribute name="AfterTargets" type="xs:string" />
+    <xs:attribute name="Inputs" type="xs:string" />
+    <xs:attribute name="Outputs" type="xs:string" />
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+
+  <xs:complexType name="ImportType">
+    <xs:attribute name="Project" type="xs:string" use="required" />
+    <xs:attribute name="Condition" type="xs:string" />
+    <xs:attribute name="Label" type="xs:string" />
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+
+  <xs:complexType name="ImportGroupType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="Import" type="ImportType" />
+    </xs:choice>
+    <xs:attribute name="Condition" type="xs:string" />
+    <xs:attribute name="Label" type="xs:string" />
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+
+  <xs:complexType name="ChooseType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="When" type="ConditionalBlockType" />
+      <xs:element name="Otherwise" type="OpenType" />
+    </xs:choice>
+  </xs:complexType>
+
+  <xs:complexType name="ConditionalBlockType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="PropertyGroup" type="PropertyGroupType" />
+      <xs:element name="ItemGroup" type="ItemGroupType" />
+    </xs:choice>
+    <xs:attribute name="Condition" type="xs:string" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="UsingTaskType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:any processContents="skip" />
+    </xs:choice>
+    <xs:attribute name="TaskName" type="xs:string" use="required" />
+    <xs:attribute name="AssemblyFile" type="xs:string" />
+    <xs:attribute name="AssemblyName" type="xs:string" />
+    <xs:attribute name="Condition" type="xs:string" />
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+
+  <xs:complexType name="SdkType">
+    <xs:attribute name="Name" type="xs:string" use="required" />
+    <xs:attribute name="Version" type="xs:string" />
+    <xs:attribute name="MinimumVersion" type="xs:string" />
+  </xs:complexType>
+
+  <xs:complexType name="OpenType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:any processContents="skip" />
+    </xs:choice>
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+</xs:schema>
