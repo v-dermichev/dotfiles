@@ -182,6 +182,28 @@ function M.show(id)
   end
 end
 
+-- Re-dock the bottom slot to full width. Reopening the left sidebar (neo-tree)
+-- while a terminal / output pane is docked nests that pane inside the editor
+-- column, so it stops spanning the full width and the tree stretches full-height
+-- beside it. `wincmd J` pulls the pane back to a full-width split along the very
+-- bottom, leaving the tree and editor to share the row above it. Height is
+-- preserved so the user's resize sticks. No-op when the slot is already full
+-- width or floating.
+function M.redock()
+  local win = find_term_win()
+  if not win then
+    for _, e in ipairs(M._ext) do
+      if e.win and vim.api.nvim_win_is_valid(e.win) then win = e.win; break end
+    end
+  end
+  if not win or not vim.api.nvim_win_is_valid(win) then return end
+  if vim.api.nvim_win_get_config(win).relative ~= "" then return end -- floating slot
+  if vim.api.nvim_win_get_width(win) >= vim.o.columns then return end -- already full width
+  local height = vim.api.nvim_win_get_height(win)
+  vim.api.nvim_win_call(win, function() vim.cmd("wincmd J") end)
+  pcall(vim.api.nvim_win_set_height, win, height)
+end
+
 -- Hide any visible terminal; if none visible, open terminal 1 (or the last one shown).
 M._last_shown = 1
 function M.toggle()

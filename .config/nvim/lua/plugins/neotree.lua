@@ -30,18 +30,35 @@ return {
         ["l"] = "open", -- unfold dir / open file in editor
         ["h"] = "close_node", -- fold dir
         ["o"] = { "open_with", nowait = true }, -- xdg "open with" menu; launches floating
-        ["O"] = "open_split", -- open file in a horizontal neovim split
+        ["O"] = { "open_with_tiled", nowait = true }, -- same menu; launches tiled
+        ["."] = "set_root", -- re-root the tree at the hovered directory
+        ["<bs>"] = "navigate_up", -- re-root one level up (undo set_root / go back)
+        ["w"] = { "change_dir", nowait = true }, -- :cd Neovim to the hovered directory
       },
     },
     commands = {
       open_with = function(state)
-        require("config.open_with").open_with(state)
+        require("config.open_with").open_with(state, { float = true })
+      end,
+      open_with_tiled = function(state)
+        require("config.open_with").open_with(state, { float = false })
       end,
       quick_open = function(state)
         require("config.open_with").quick(state, { float = true })
       end,
       quick_open_tiled = function(state)
         require("config.open_with").quick(state, { float = false })
+      end,
+      -- Change Neovim's working directory to the hovered folder (or the parent
+      -- dir of a hovered file). Global :cd, so terminals / pickers / LSP root
+      -- all follow. Pair with `.` (set_root) to also re-root the tree there.
+      change_dir = function(state)
+        local node = state.tree:get_node()
+        if not node then return end
+        local dir = node.type == "directory" and node.path
+          or vim.fn.fnamemodify(node.path, ":h")
+        vim.cmd("cd " .. vim.fn.fnameescape(dir))
+        vim.notify("cwd → " .. dir)
       end,
     },
     filesystem = {
@@ -131,6 +148,24 @@ return {
         else
           open_sidebar()
         end
+      end,
+    })
+
+    -- Reopening the sidebar while a terminal / output pane is docked at the
+    -- bottom nests that pane inside the editor column (losing its full width)
+    -- and stretches the tree full-height beside it. Re-dock the pane to
+    -- full-width bottom, restoring the tree-and-editor-share-the-top,
+    -- terminal-spans-the-bottom layout. Do it synchronously in the same event
+    -- tick the tree window is created, before the screen redraws, so the pane
+    -- never flashes at editor width. A scheduled pass follows as an idempotent
+    -- safety net for any path where the synchronous move is blocked (it no-ops
+    -- once the pane is already full width).
+    vim.api.nvim_create_autocmd("BufWinEnter", {
+      group = group,
+      callback = function(args)
+        if vim.bo[args.buf].filetype ~= "neo-tree" then return end
+        pcall(function() require("config.term_tabs").redock() end)
+        vim.schedule(function() require("config.term_tabs").redock() end)
       end,
     })
 

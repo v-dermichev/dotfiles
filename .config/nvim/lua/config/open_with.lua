@@ -104,7 +104,9 @@ end
 local function resolve(state)
   local node = state.tree:get_node()
   local path = node and node.path
-  if not path or node.type ~= "file" then
+  -- Directories are a first-class mime type (inode/directory), so folders get
+  -- an "open with" menu too (file managers, neovide, ...), not just files.
+  if not path or (node.type ~= "file" and node.type ~= "directory") then
     return nil
   end
 
@@ -161,16 +163,22 @@ local function popup_select(entries, prompt, on_choice)
 end
 
 -- neo-tree command: pick an xdg app for the hovered file's mime type and launch
--- it floating. Bound to `o`.
-function M.open_with(state)
+-- it. `opts.float` (default true) floats the window (o) vs tiled (O).
+function M.open_with(state, opts)
   local path, mime, entries = resolve(state)
   if not path then
     return
   end
 
-  local prompt = "Open " .. vim.fn.fnamemodify(path, ":t") .. " (" .. mime .. ")"
+  local float = not (opts and opts.float == false)
+  local prompt = "Open "
+    .. vim.fn.fnamemodify(path, ":t")
+    .. " ("
+    .. mime
+    .. ")"
+    .. (float and "" or " [tiled]")
   popup_select(entries, prompt, function(entry)
-    launch(exec_to_cmd(entry.exec, path), true)
+    launch(exec_to_cmd(entry.exec, path), float)
   end)
   return true
 end
