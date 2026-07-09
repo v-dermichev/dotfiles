@@ -33,6 +33,13 @@ map.set("n", "<C-l>", "<C-w>l", { desc = "Window: right" })
 
 map.set("n", "<Leader><Leader>f", vim.lsp.buf.format, vim.tbl_extend("force", options, { desc = "Format buffer (LSP)" }))
 
+-- Re-source init.lua (config entry point). For a single config file, `:so` on
+-- the current buffer is simpler; this reloads the whole entry point.
+map.set("n", "<leader><leader>r", function()
+  vim.cmd("source " .. vim.fn.stdpath("config") .. "/init.lua")
+  vim.notify("Sourced init.lua")
+end, vim.tbl_extend("force", options, { desc = "Source init.lua" }))
+
 
 map.set('n', '<leader>r', function()
   local file = vim.fn.expand('%:p')
@@ -194,6 +201,12 @@ end
 map.set("x", "<leader>yv", yank_rendered,
   vim.tbl_extend("force", options, { desc = "Yank selection incl. virtual text" }))
 
+-- Russian-layout support. `langmap` is the universal layer: it translates typed
+-- keys before mapping resolution, so it covers plugin `keys = {}` maps that
+-- langmapper.nvim misses (langmapper's hack_keymap only wraps maps registered
+-- after it loads, and lazy registers plugin keys through a cached keymap.set
+-- before that). Keep both: langmapper adds which-key Russian display for the
+-- config maps, langmap guarantees every mapping works regardless of layout.
 local function escape(str)
   -- You need to escape these characters to work correctly
   local escape_chars = [[;,."|\]]

@@ -27,6 +27,12 @@ return {
       javascriptreact = { "prettierd", "prettier", stop_after_first = true },
       typescriptreact = { "prettierd", "prettier", stop_after_first = true },
     },
+    -- Pin JS/JSON to 2-space indentation regardless of project config.
+    formatters = {
+      jq = { prepend_args = { "--indent", "2" } },
+      prettier = { prepend_args = { "--tab-width", "2", "--use-tabs", "false" } },
+      prettierd = { prepend_args = { "--tab-width", "2", "--use-tabs", "false" } },
+    },
     -- Used by manual format() calls: fall back to the LSP formatter when no
     -- conform formatter is configured for the filetype.
     default_format_opts = { lsp_format = "fallback" },

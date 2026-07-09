@@ -162,7 +162,7 @@ function M.open()
   })
   vim.wo[state.win].winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder"
 
-  vim.keymap.set("n", "<LeftRelease>", on_click, { buffer = state.buf, nowait = true })
+  vim.keymap.set("n", "<LeftRelease>", on_click, { buffer = state.buf, nowait = true, desc = "dap-controls: click button" })
 
   state.saved_mousemove = vim.o.mousemoveevent
   vim.o.mousemoveevent = true

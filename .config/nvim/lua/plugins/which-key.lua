@@ -2,9 +2,13 @@ return {
   "folke/which-key.nvim",
   event = "VeryLazy",
   opts = {
-    -- your configuration comes here
-    -- or leave it empty to use the default settings
-    -- refer to the configuration section below
+    -- Hide langmapper's Russian-layout twins from the hint popup: show only the
+    -- English mappings. The twins are the only maps whose lhs contains Cyrillic
+    -- (UTF-8 lead bytes 0xD0/0xD1); English maps are pure ASCII. The maps still
+    -- work in Russian layout — this only trims the which-key display.
+    filter = function(mapping)
+      return not (mapping.lhs and mapping.lhs:find("[\208\209]"))
+    end,
   },
   keys = {
     {
