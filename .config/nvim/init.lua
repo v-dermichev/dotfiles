@@ -131,7 +131,12 @@ vim.cmd.colorscheme("pycharm-dark")
 
 -- More distinct pane separators while staying in the tokyonight palette.
 vim.opt.fillchars:append({ vert = "┃", vertleft = "┫", vertright = "┣", horiz = "━", horizup = "┻", horizdown = "┳", verthoriz = "╋" })
+-- One clear=true augroup for the highlight autocmds (here and apply_pycharm
+-- below), so re-sourcing init.lua for hot-reload replaces them instead of
+-- stacking a fresh anonymous handler on every reload.
+local user_hl_group = vim.api.nvim_create_augroup("UserHighlights", { clear = true })
 vim.api.nvim_create_autocmd("ColorScheme", {
+  group = user_hl_group,
   callback = function()
     vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#7aa2f7", bg = "NONE", bold = true })
   end,
@@ -269,6 +274,7 @@ end
 -- ---------------------------------------------------------------------------
 
 vim.api.nvim_create_autocmd("ColorScheme", {
+  group = user_hl_group,
   callback = apply_pycharm,
 })
 apply_pycharm()

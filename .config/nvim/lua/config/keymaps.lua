@@ -33,12 +33,21 @@ map.set("n", "<C-l>", "<C-w>l", { desc = "Window: right" })
 
 map.set("n", "<Leader><Leader>f", vim.lsp.buf.format, vim.tbl_extend("force", options, { desc = "Format buffer (LSP)" }))
 
--- Re-source init.lua (config entry point). For a single config file, `:so` on
--- the current buffer is simpler; this reloads the whole entry point.
+-- Hot-reload config: bust the require cache for the stateless config modules,
+-- then re-source init.lua. Re-sourcing re-applies init.lua's own top-level
+-- settings (options, highlights, colorscheme), re-requires the cleared modules
+-- fresh, and re-runs the idempotent setup()s (venv / line_length use clear=true
+-- augroups, so nothing duplicates). Stateful modules (config.term_tabs) are
+-- intentionally NOT cleared, so open terminals survive the reload.
+--
+-- Not covered: plugin specs -> `:Lazy reload <name>`; edits to stateful modules
+-- -> restart. Removed maps also linger until restart (reload only re-adds).
 map.set("n", "<leader><leader>r", function()
+  package.loaded["config.keymaps"] = nil
+  package.loaded["config.options"] = nil
   vim.cmd("source " .. vim.fn.stdpath("config") .. "/init.lua")
-  vim.notify("Sourced init.lua")
-end, vim.tbl_extend("force", options, { desc = "Source init.lua" }))
+  vim.notify("Config reloaded", vim.log.levels.INFO)
+end, vim.tbl_extend("force", options, { desc = "Hot-reload config" }))
 
 
 map.set('n', '<leader>r', function()
