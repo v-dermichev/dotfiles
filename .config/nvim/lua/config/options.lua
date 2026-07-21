@@ -51,8 +51,8 @@ opt.undofile = true        -- Persistent undo (saves undo history)
 opt.scrolloff = 5          -- Keep 5 lines visible above/below cursor
 opt.sidescrolloff = 8      -- Keep 8 columns visible when scrolling sideways
 opt.updatetime = 250       -- Faster CursorHold: gitsigns blame, LSP highlights
-opt.splitright = true      -- Vertical splits open to the right
-opt.splitbelow = true      -- Horizontal splits open below
+-- NOTE: leave splitright/splitbelow at defaults — enabling them broke the
+-- neo-tree sidebar width in the session-restore layout dance (2026-07-22).
 
 -- ---------------------------------------------------------------------------
 -- Diagnostics
