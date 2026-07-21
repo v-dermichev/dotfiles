@@ -133,6 +133,13 @@ local function apply_pycharm()
   vim.api.nvim_set_hl(0, "@tag.delimiter",                       { fg = TAGC })
   vim.api.nvim_set_hl(0, "@tag.attribute",                       { fg = FG })
   vim.api.nvim_set_hl(0, "@character.special.xml",               { fg = "#56a8f5" })
+  -- Semantic tokens outrank treesitter, and roslyn/easy-dotnet tokenize csproj
+  -- buffers: element names arrive as @lsp.type.class.xml and would take the
+  -- C# type styling (plain fg + italic). Repaint the xml-suffixed groups with
+  -- the XML palette so tags stay gold.
+  vim.api.nvim_set_hl(0, "@lsp.type.class.xml",                  { fg = TAGC })
+  vim.api.nvim_set_hl(0, "@lsp.type.property.xml",               { fg = FG })
+  vim.api.nvim_set_hl(0, "@lsp.type.variable.xml",               { fg = FG })
 
   -- Legacy Vim syntax groups (fallback when a buffer has no treesitter / LSP highlight).
   vim.api.nvim_set_hl(0, "Type",       { fg = TYPE })
