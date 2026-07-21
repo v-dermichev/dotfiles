@@ -153,7 +153,7 @@
         "exec": "layout=$(hyprctl getoption general:layout -j | jq -r '.str'); if [ \"$layout\" = \"dwindle\" ]; then echo '{\"text\": \"󰕰\", \"tooltip\": \"Layout: dwindle\", \"class\": \"dwindle\"}'; else echo '{\"text\": \"󰕫\", \"tooltip\": \"Layout: master\", \"class\": \"master\"}'; fi",
         "return-type": "json",
         "interval": 2,
-        "on-click": "hyprctl keyword general:layout \"$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle)\""
+        "on-click": "next=$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle); hyprctl eval \"hl.config({ general = { layout = '$next' } })\""
     },
     "custom/notification-center": {
         "tooltip": false,
@@ -179,7 +179,7 @@
         "return-type": "json",
         "interval": "once",
         "signal": 10,
-        "on-click": "if [ ! -f /tmp/opacity-enabled ] || [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo 0 > /tmp/opacity-enabled; hyprctl keyword decoration:active_opacity 1.0; hyprctl keyword decoration:inactive_opacity 1.0; else echo 1 > /tmp/opacity-enabled; hyprctl keyword decoration:active_opacity $HYPR_ACTIVE_OPACITY; hyprctl keyword decoration:inactive_opacity $HYPR_INACTIVE_OPACITY; fi; pkill -RTMIN+10 waybar"
+        "on-click": "if [ ! -f /tmp/opacity-enabled ] || [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo 0 > /tmp/opacity-enabled; hyprctl eval 'hl.config({ decoration = { active_opacity = 1.0, inactive_opacity = 1.0 } })'; else echo 1 > /tmp/opacity-enabled; hyprctl eval \"hl.config({ decoration = { active_opacity = $HYPR_ACTIVE_OPACITY, inactive_opacity = $HYPR_INACTIVE_OPACITY } })\"; fi; pkill -RTMIN+10 waybar"
     },
     "custom/hypr-split": {
         "exec": "~/.config/waybar/scripts/hypr-split-status.sh",

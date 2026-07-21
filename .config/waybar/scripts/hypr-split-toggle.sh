@@ -1,7 +1,7 @@
 #!/bin/bash
 STATE_FILE="/tmp/hypr-split-state"
 
-hyprctl dispatch layoutmsg togglesplit
+hyprctl dispatch 'hl.dsp.layout("togglesplit")'
 # flip state
 if [ "$(cat "$STATE_FILE" 2>/dev/null)" = "V" ]; then
   echo "H" > "$STATE_FILE"

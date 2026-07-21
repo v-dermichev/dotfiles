@@ -17,10 +17,10 @@ layer=overlay
 anchor=top-right
 on-notify=exec canberra-gtk-play -i complete
 [app-name="Telegram Desktop"]
-on-button-left=exec hyprctl dispatch togglespecialworkspace telegram; makoctl dismiss -n "$id"
+on-button-left=exec hyprctl dispatch 'hl.dsp.workspace.toggle_special("telegram")'; makoctl dismiss -n "$id"
 
 [body~="messenger.360.yandex.com"]
-on-button-left=exec hyprctl dispatch togglespecialworkspace messenger; makoctl dismiss -n "$id"
+on-button-left=exec hyprctl dispatch 'hl.dsp.workspace.toggle_special("messenger")'; makoctl dismiss -n "$id"
 
 [app-name="Hyprshot"]
 on-button-left=exec kitty yazi ~/Screenshots; makoctl dismiss -n "$id"
