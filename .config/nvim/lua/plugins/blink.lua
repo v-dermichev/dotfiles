@@ -46,6 +46,26 @@ return {
           name = 'easy-dotnet',
           module = 'easy-dotnet.completion.blink',
           enabled = is_csproj,
+          -- Outrank lemminx's duplicate element items: both offer e.g.
+          -- PackageReference, but easy-dotnet's self-closing attribute snippet
+          -- is the one we want tab to land on.
+          score_offset = 100,
+        },
+        lsp = {
+          -- In csproj buffers, drop lemminx's element items that easy-dotnet
+          -- also provides (its pair-tag variant mangles the typed <prefix);
+          -- keep everything else (schema properties, attributes, values).
+          transform_items = function(_, items)
+            if not is_csproj() then return items end
+            local dupes = {
+              PackageReference = true, ProjectReference = true,
+              PropertyGroup = true, ItemGroup = true,
+              Target = true, Import = true, Choose = true,
+            }
+            return vim.tbl_filter(function(item)
+              return not dupes[item.label]
+            end, items)
+          end,
         },
       },
     },
