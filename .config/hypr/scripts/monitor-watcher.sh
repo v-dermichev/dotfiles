@@ -13,10 +13,10 @@ PAUSE_FILE="/tmp/monitor-watcher-paused"
 handle_monitor_change() {
     sleep 0.5
     [ -f "$PAUSE_FILE" ] && return
-    if hyprctl monitors | grep -q "$EXT"; then
-        hyprctl keyword monitor "$INT, disable"
+    if hyprctl monitors all -j | jq -e --arg n "$EXT" 'any(.[]; .name == $n)' >/dev/null; then
+        hyprctl eval "hl.monitor({ output = \"$INT\", disabled = true })"
     else
-        hyprctl keyword monitor "$INT, $MODE, 0x0, 1"
+        hyprctl eval "hl.monitor({ output = \"$INT\", mode = \"$MODE\", position = \"0x0\", scale = 1, disabled = false })"
     fi
 }
 
@@ -28,5 +28,7 @@ while true; do
                 ;;
         esac
     done
+    # Session ended (socket gone): exit instead of retrying forever as an orphan
+    [ -S "$SOCKET" ] || exit 0
     sleep 1
 done

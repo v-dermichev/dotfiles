@@ -6,7 +6,7 @@ WS_NAME="$1"
 shift
 CMD="$@"
 
-hyprctl dispatch workspace "name:$WS_NAME"
+hyprctl dispatch "hl.dsp.focus({ workspace = \"name:$WS_NAME\" })"
 
 # Check if workspace has any windows
 COUNT=$(hyprctl clients -j | jq "[.[] | select(.workspace.name == \"$WS_NAME\")] | length")
