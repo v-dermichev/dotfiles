@@ -15,9 +15,80 @@ if vim.g.neovide then
   map.set('v', "<C-/>", "gc", { desc = "Toggle comment for current selection", remap = true })
 end
 
+-- Paste the system clipboard into a :terminal job (lazygit prompts, shells, …).
+-- Needed under Neovide: it registers only the clipboard *provider*, not a paste
+-- keybinding on Linux, so <C-S-v> otherwise does nothing in terminal mode and the
+-- clipboard can't reach the running program. In kitty the emulator injects the
+-- paste itself, so this is a harmless no-op key there. Sends '+' straight to the
+-- terminal PTY via chansend; trailing newline is stripped so a copied URL doesn't
+-- submit a lazygit prompt prematurely (lazygit doesn't enable bracketed paste).
+map.set("t", "<C-S-v>", function()
+  local chan = vim.b.terminal_job_id
+  if chan then vim.fn.chansend(chan, (vim.fn.getreg("+"):gsub("\n$", ""))) end
+end, { desc = "Terminal: paste system clipboard" })
+
 map.set("n", "<A-CR>", vim.lsp.buf.code_action, vim.tbl_extend("force", options, { desc = "Code action (intentions)" }))
 map.set("n", "K", vim.lsp.buf.hover, vim.tbl_extend("force", options, { desc = "LSP hover" }))
 map.set("n", "<leader>D", vim.diagnostic.open_float, vim.tbl_extend("force", options, { desc = "Diagnostic float" }))
+
+-- Toggle the identifier of the declaration under the cursor in an
+-- `export { ... }` block in the current file. Creates the block at
+-- end-of-file if none exists; removes the name if already present.
+map.set("n", "<leader><leader>e", function()
+  -- name of the const/let/var/function/class/type/interface on this line
+  local decl = vim.api.nvim_get_current_line():gsub("^%s*export%s+", "")
+  local name = decl:match("^%s*[%a]+%s+([%a_$][%w_$]*)")
+  if not name then
+    vim.notify("No declaration found on this line", vim.log.levels.WARN)
+    return
+  end
+
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+
+  -- locate a local `export { ... }` block (skip re-exports: `... } from`)
+  local si, ei
+  for i, l in ipairs(lines) do
+    if l:match("^%s*export%s*{") and not l:match("}%s*from") then
+      si = i
+      for j = i, #lines do
+        if lines[j]:find("}") then ei = j break end
+      end
+      break
+    end
+  end
+
+  if not si or not ei then
+    -- no block yet: append one at EOF
+    vim.api.nvim_buf_set_lines(0, -1, -1, false, { "", "export { " .. name .. " }" })
+    return
+  end
+
+  -- collect existing names from between the braces
+  local inner = table.concat(vim.list_slice(lines, si, ei), "\n"):match("{(.-)}") or ""
+  local names, found = {}, nil
+  for part in inner:gmatch("[^,]+") do
+    local t = vim.trim(part)
+    if t ~= "" then
+      table.insert(names, t)
+      if t:match("^([%w_$]+)") == name then found = #names end
+    end
+  end
+
+  if found then table.remove(names, found) else table.insert(names, name) end
+
+  local indent = lines[si]:match("^%s*")
+  local out
+  if #names == 0 then
+    out = {} -- block becomes empty: drop it entirely
+  elseif ei > si then
+    out = { indent .. "export {" }
+    for _, t in ipairs(names) do table.insert(out, indent .. "  " .. t .. ",") end
+    table.insert(out, indent .. "}")
+  else
+    out = { indent .. "export { " .. table.concat(names, ", ") .. " }" }
+  end
+  vim.api.nvim_buf_set_lines(0, si - 1, ei, false, out)
+end, vim.tbl_extend("force", options, { desc = "Toggle name in export block" }))
 
 -- Toggle LSP inlay hints for current buffer
 map.set("n", "<leader>ih", function()

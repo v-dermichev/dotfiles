@@ -1,5 +1,23 @@
 -- Opt-in formatting (no format-on-save). Python goes through ruff (lint-fix +
 -- format); other filetypes use their usual tool, then the LSP formatter.
+
+-- Projects with a biome.json format + organize imports through Biome
+-- (`biome check --write`); everything else keeps its usual formatter.
+local function has_biome(bufnr)
+  local fname = vim.api.nvim_buf_get_name(bufnr)
+  return vim.fs.find({ "biome.json", "biome.jsonc" }, {
+    upward = true,
+    path = fname ~= "" and fname or vim.uv.cwd(),
+  })[1] ~= nil
+end
+
+local function prefer_biome(fallback)
+  return function(bufnr)
+    if has_biome(bufnr) then return { "biome-check" } end
+    return fallback
+  end
+end
+
 return {
   "stevearc/conform.nvim",
   cmd = { "ConformInfo" },
@@ -21,11 +39,11 @@ return {
     formatters_by_ft = {
       python = { "ruff_fix", "ruff_format" },
       lua = { "stylua" },
-      json = { "jq" },
-      javascript = { "prettierd", "prettier", stop_after_first = true },
-      typescript = { "prettierd", "prettier", stop_after_first = true },
-      javascriptreact = { "prettierd", "prettier", stop_after_first = true },
-      typescriptreact = { "prettierd", "prettier", stop_after_first = true },
+      json = prefer_biome({ "jq" }),
+      javascript = prefer_biome({ "prettierd", "prettier", stop_after_first = true }),
+      typescript = prefer_biome({ "prettierd", "prettier", stop_after_first = true }),
+      javascriptreact = prefer_biome({ "prettierd", "prettier", stop_after_first = true }),
+      typescriptreact = prefer_biome({ "prettierd", "prettier", stop_after_first = true }),
     },
     -- Pin JS/JSON to 2-space indentation regardless of project config.
     formatters = {

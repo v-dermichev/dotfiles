@@ -54,15 +54,49 @@ local function exec_to_cmd(exec, path)
   return vim.trim(exec)
 end
 
--- Spawn detached. When `float` is set and we are on Hyprland, the window is
--- floated+centered per-launch via an inline exec rule, so only what we open
--- from here floats -- no global rule. Otherwise it opens tiled as usual.
-local function launch(cmd, float)
-  if float and vim.env.HYPRLAND_INSTANCE_SIGNATURE then
-    vim.fn.jobstart({ "hyprctl", "dispatch", "exec", "[float; center] " .. cmd }, { detach = true })
-  else
-    vim.fn.jobstart({ "sh", "-c", cmd }, { detach = true })
+-- Neovim's current Hyprland workspace as an exec-rule selector, or nil off
+-- Hyprland / on error. Special workspaces (our docked "IDE" scratchpad) carry a
+-- negative id and are addressed by name (`special:IDE`); regular workspaces by
+-- numeric id. Without this pin, a window launched from a special workspace maps
+-- onto the regular workspace beneath the overlay instead of beside the editor.
+local function current_workspace_selector()
+  if not vim.env.HYPRLAND_INSTANCE_SIGNATURE then
+    return nil
   end
+  local ok, ws = pcall(vim.fn.json_decode, vim.fn.system({ "hyprctl", "activeworkspace", "-j" }))
+  if not ok or type(ws) ~= "table" or ws.id == nil then
+    return nil
+  end
+  if ws.id < 0 then
+    return "special:" .. (tostring(ws.name):gsub("^special:", ""))
+  end
+  return tostring(ws.id)
+end
+
+-- Spawn detached. On Hyprland the launch is routed through `hyprctl dispatch
+-- exec` with a per-launch inline rule set: the window is pinned to Neovim's
+-- current workspace (`silent`, so focus/visibility are untouched -- it just
+-- materializes on the workspace already in front of us) and, when `float` is
+-- set, floated+centered. Building the rule per launch keeps it scoped to what
+-- we open from here -- no global rule. Off Hyprland, spawn tiled as usual.
+local function launch(cmd, float)
+  if not vim.env.HYPRLAND_INSTANCE_SIGNATURE then
+    vim.fn.jobstart({ "sh", "-c", cmd }, { detach = true })
+    return
+  end
+
+  local rules = {}
+  local ws = current_workspace_selector()
+  if ws then
+    rules[#rules + 1] = "workspace " .. ws .. " silent"
+  end
+  if float then
+    rules[#rules + 1] = "float"
+    rules[#rules + 1] = "center"
+  end
+
+  local prefix = #rules > 0 and ("[" .. table.concat(rules, "; ") .. "] ") or ""
+  vim.fn.jobstart({ "hyprctl", "dispatch", "exec", prefix .. cmd }, { detach = true })
 end
 
 -- Desktop ids registered for a mime type, default first, deduped.

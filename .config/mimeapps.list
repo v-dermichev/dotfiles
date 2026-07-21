@@ -45,3 +45,4 @@ application/x-shellscript=nvim.desktop;
 text/markdown=nvim.desktop;
 application/json=nvim.desktop;
 inode/directory=nvim.desktop;neovide.desktop;
+text/html=nvim.desktop;

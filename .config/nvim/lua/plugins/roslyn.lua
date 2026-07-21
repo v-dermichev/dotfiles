@@ -107,6 +107,24 @@ return {
     vim.api.nvim_create_autocmd("DirChanged", { callback = function(a) retarget(a.file) end })
   end,
   config = function()
+    -- Document-diagnostic refresh shim for Neovim < 0.13.
+    -- Roslyn advertises workspace/diagnostic, so core's on_refresh re-pulls
+    -- only workspace diagnostics and leaves the open buffer's document-pull
+    -- diagnostics stale — warnings don't update after a "Fix all in project"
+    -- code action, and neither :wa nor :LspRestart clears them. Re-pull the
+    -- attached document buffers too. neovim/neovim#40623 does this in core
+    -- from 0.13, so this whole block should be deleted once on 0.13+.
+    if vim.fn.has("nvim-0.13") == 0 then
+      vim.lsp.handlers["workspace/diagnostic/refresh"] = function(err, res, ctx)
+        vim.lsp.diagnostic.on_refresh(err, res, ctx)
+        local client = vim.lsp.get_client_by_id(ctx.client_id)
+        for bufnr in pairs(client and client.attached_buffers or {}) do
+          vim.lsp.diagnostic._refresh(bufnr, ctx.client_id)
+        end
+        return vim.NIL
+      end
+    end
+
     vim.lsp.config("roslyn", {
       settings = {
         ["csharp|inlay_hints"] = {
