@@ -123,6 +123,17 @@ local function apply_pycharm()
   vim.api.nvim_set_hl(0, "@lsp.type.namespace",                  { fg = NAMESPACE })
   vim.api.nvim_set_hl(0, "@lsp.type.macro",                      { fg = KEYWORD })
 
+  -- XML / markup tags (csproj, slnx, axaml, html). Islands Dark values:
+  -- XML_TAG / XML_TAG_NAME / XML_PROLOGUE = #d5b778 (gold, incl. <> brackets),
+  -- XML_ATTRIBUTE_NAME = default fg, XML_ENTITY_REFERENCE = #56a8f5.
+  -- Attribute values / tag text inherit string green / default fg.
+  local TAGC = "#d5b778"
+  vim.api.nvim_set_hl(0, "@tag",                                 { fg = TAGC })
+  vim.api.nvim_set_hl(0, "@tag.builtin",                         { fg = TAGC })
+  vim.api.nvim_set_hl(0, "@tag.delimiter",                       { fg = TAGC })
+  vim.api.nvim_set_hl(0, "@tag.attribute",                       { fg = FG })
+  vim.api.nvim_set_hl(0, "@character.special.xml",               { fg = "#56a8f5" })
+
   -- Legacy Vim syntax groups (fallback when a buffer has no treesitter / LSP highlight).
   vim.api.nvim_set_hl(0, "Type",       { fg = TYPE })
   vim.api.nvim_set_hl(0, "Structure",  { fg = TYPE })
