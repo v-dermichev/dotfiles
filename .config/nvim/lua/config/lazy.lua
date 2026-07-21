@@ -32,6 +32,13 @@ require("lazy").setup({
   install = { colorscheme = { "habamax" } },
   -- Quietly check for updates in the background; the autocmd below applies them.
   checker = { enabled = true, notify = false },
+  -- No plugin here needs luarocks; disabling kills the checkhealth error.
+  rocks = { enabled = false },
+  performance = {
+    rtp = {
+      disabled_plugins = { "gzip", "tarPlugin", "tohtml", "tutor", "zipPlugin" },
+    },
+  },
 })
 
 -- Apply available plugin updates in the background, at most once per 24h.

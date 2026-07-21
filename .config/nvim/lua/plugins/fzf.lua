@@ -2,6 +2,8 @@ return {
     "ibhagwan/fzf-lua",
     enabled = true,
     dependencies = { "nvim-tree/nvim-web-devicons" },
+    -- Defer past UI startup; the keymaps below are registered when it loads.
+    event = "VeryLazy",
     config = function()
         local map = vim.keymap;
         local options = {};
