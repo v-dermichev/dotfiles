@@ -181,6 +181,9 @@ return {
       filetypes = { "xml", "axaml", "xsd", "xslt", "csproj", "slnx" },
       settings = {
         xml = {
+          -- Don't flag schema-less documents ("No grammar constraints…") —
+          -- csproj intentionally has no XSD association (easy-dotnet owns it).
+          validation = { noGrammar = "ignore" },
           catalogs = {
             nvim_config .. "/schemas/catalog.xml",
           },
