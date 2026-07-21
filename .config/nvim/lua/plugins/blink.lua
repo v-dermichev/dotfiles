@@ -28,7 +28,8 @@ return {
 	      documentation = { auto_show = true, window = { border = 'rounded' } },
 	    },
 
-    signature = { window = { border = 'rounded' } },
+    -- Native signature help while typing call arguments (replaces lsp_signature.nvim).
+    signature = { enabled = true, window = { border = 'rounded' } },
 
     sources = {
       default = function()
