@@ -83,13 +83,34 @@ return {
     -- (session restore + async neo-tree open) can otherwise leave the tree on
     -- the right or as the only window; this normalizes whatever it produced.
     local function normalize_layout()
-      local tree, editor
+      local tree, editors, ghosts = nil, {}, {}
       for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == "neo-tree" then
-          tree = w
-        else
-          editor = editor or w
+        if vim.api.nvim_win_get_config(w).relative == "" then
+          local b = vim.api.nvim_win_get_buf(w)
+          if vim.bo[b].filetype == "neo-tree" then
+            tree = w
+          elseif vim.bo[b].buftype == ""
+            and vim.api.nvim_buf_get_name(b) == ""
+            and not vim.bo[b].modified
+            and vim.api.nvim_buf_line_count(b) == 1
+            and (vim.api.nvim_buf_get_lines(b, 0, 1, false)[1] or "") == "" then
+            -- Empty scratch pane — either a bare launch or the fallback split
+            -- created below on an earlier pass.
+            table.insert(ghosts, w)
+          else
+            table.insert(editors, w)
+          end
         end
+      end
+
+      -- When a real editor exists, close any scratch leftovers: the fallback
+      -- split below can race session restore, which then brings its own editor
+      -- and squeezes the fallback into a 1-column ghost at the screen edge.
+      local editor = editors[1]
+      if editor then
+        for _, g in ipairs(ghosts) do pcall(vim.api.nvim_win_close, g, false) end
+      else
+        editor = ghosts[1]
       end
 
       -- No editor pane (collapsed session / no-arg launch): split an empty one.
@@ -131,6 +152,10 @@ return {
         normalize_layout()
         vim.schedule(normalize_layout)
       end)
+      -- Late sweep: the session-restore / neo-tree async dance can produce its
+      -- last window after both scheduled passes (leaving a squeezed ghost pane);
+      -- normalize is idempotent, so one more pass after things settle is safe.
+      vim.defer_fn(normalize_layout, 300)
     end
 
     -- Auto-open on start. Skipped when nvim is piped stdin (git/man scratch

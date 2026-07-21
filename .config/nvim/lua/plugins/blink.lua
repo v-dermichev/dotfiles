@@ -34,7 +34,9 @@ return {
     sources = {
       default = function()
         if is_csproj() then
-          return { 'easy_dotnet' }
+          -- easy_dotnet for NuGet package/version completion, lsp so lemminx's
+          -- MSBuild schema completions (elements/attributes) still appear.
+          return { 'easy_dotnet', 'lsp', 'path' }
         end
 
         return { 'lsp', 'path', 'snippets', 'buffer' }
