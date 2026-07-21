@@ -185,10 +185,9 @@ return {
             nvim_config .. "/schemas/catalog.xml",
           },
           fileAssociations = {
-            {
-              pattern = "**/*.csproj",
-              systemId = nvim_config .. "/schemas/Microsoft.Build.CommonTypes.xsd",
-            },
+            -- No csproj association: the MSBuild XSD flooded completion with
+            -- 71 schema elements that fought easy-dotnet's csproj snippets
+            -- (PackageReference etc.) — easy-dotnet owns csproj completion.
             {
               pattern = "**/*.slnx",
               systemId = nvim_config .. "/schemas/Slnx.xsd",
