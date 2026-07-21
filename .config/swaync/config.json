@@ -19,7 +19,7 @@
   "script-fail-notify": false,
   "scripts": {
     "notification-sound": {
-      "exec": "canberra-gtk-play -i complete",
+      "exec": "sh -c 'pw-play /usr/share/sounds/freedesktop/stereo/complete.oga &'",
       "app-name": ".*",
       "run-on": "receive"
     },

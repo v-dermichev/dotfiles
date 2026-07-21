@@ -176,11 +176,11 @@
         "escape-to-close": true
     },
     "custom/opacity": {
-        "exec": "if [ -f /tmp/opacity-enabled ] && [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo '{\"text\": \"󰂵\", \"tooltip\": \"Transparency: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂶\", \"tooltip\": \"Transparency: OFF\", \"class\": \"off\"}'; fi",
+        "exec": "if [ \"$(hyprctl getoption decoration:active_opacity -j | jq '.float < 1')\" = \"true\" ]; then echo '{\"text\": \"󰂵\", \"tooltip\": \"Transparency: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂶\", \"tooltip\": \"Transparency: OFF\", \"class\": \"off\"}'; fi",
         "return-type": "json",
         "interval": "once",
         "signal": 10,
-        "on-click": "if [ ! -f /tmp/opacity-enabled ] || [ \"$(cat /tmp/opacity-enabled)\" = \"1\" ]; then echo 0 > /tmp/opacity-enabled; hyprctl eval 'hl.config({ decoration = { active_opacity = 1.0, inactive_opacity = 1.0 } })'; else echo 1 > /tmp/opacity-enabled; hyprctl eval \"hl.config({ decoration = { active_opacity = $HYPR_ACTIVE_OPACITY, inactive_opacity = $HYPR_INACTIVE_OPACITY } })\"; fi; pkill -RTMIN+10 waybar"
+        "on-click": "if [ \"$(hyprctl getoption decoration:active_opacity -j | jq '.float < 1')\" = \"true\" ]; then hyprctl eval 'hl.config({ decoration = { active_opacity = 1.0, inactive_opacity = 1.0 } })'; else hyprctl eval \"hl.config({ decoration = { active_opacity = ${HYPR_ACTIVE_OPACITY:-0.95}, inactive_opacity = ${HYPR_INACTIVE_OPACITY:-0.90} } })\"; fi; pkill -RTMIN+10 waybar"
     },
     "custom/hypr-split": {
         "exec": "~/.config/waybar/scripts/hypr-split-status.sh",

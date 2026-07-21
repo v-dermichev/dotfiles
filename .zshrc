@@ -98,7 +98,14 @@ plugins=(
 
 [[ -f $ZSH/oh-my-zsh.sh ]] && source $ZSH/oh-my-zsh.sh
 if command -v dotnet &>/dev/null; then
-  eval "$(dotnet completions script zsh)"
+  # `dotnet completions script zsh` costs ~230ms; cache it and regenerate only
+  # when the dotnet binary itself changes (e.g. after a pacman upgrade)
+  _dotnet_completions_cache="$HOME/.cache/dotnet-completions.zsh"
+  if [[ ! -s $_dotnet_completions_cache || "$(command -v dotnet)" -nt $_dotnet_completions_cache ]]; then
+    mkdir -p "$HOME/.cache"
+    dotnet completions script zsh > "$_dotnet_completions_cache" 2>/dev/null
+  fi
+  source "$_dotnet_completions_cache"
   _dotnet_zsh_complete()
   {
     local completions=("$(dotnet complete "$words")")
@@ -400,7 +407,7 @@ function work() {
     fi
 }
 
-command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
+# zoxide is initialized by the oh-my-zsh `zoxide` plugin — no second init here
 
 if command -v yazi &>/dev/null; then
   function y() {

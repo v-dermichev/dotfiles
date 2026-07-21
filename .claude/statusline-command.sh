@@ -2,9 +2,15 @@
 # Claude Code status line — agnoster-inspired
 input=$(cat)
 
-cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd')
-model=$(echo "$input" | jq -r '.model.display_name')
-used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+# Single jq pass over stdin; @sh-quoted so eval is safe
+eval "$(echo "$input" | jq -r '@sh "cwd=\(.workspace.current_dir // .cwd // "")
+model=\(.model.display_name // "")
+used=\(.context_window.used_percentage // "")
+five_h=\(.rate_limits.five_hour.used_percentage // "")
+five_h_reset=\(.rate_limits.five_hour.resets_at // "")
+seven_d=\(.rate_limits.seven_day.used_percentage // "")
+seven_d_reset=\(.rate_limits.seven_day.resets_at // "")"')"
+
 # Shorten home directory to ~
 home="$HOME"
 short_cwd="${cwd/#$home/\~}"
@@ -13,7 +19,6 @@ short_cwd="${cwd/#$home/\~}"
 git_branch=$(git -C "$cwd" --no-optional-locks branch --show-current 2>/dev/null)
 
 # Build left side
-left=""
 
 # Directory segment
 left=$(printf '\033[34m%s\033[0m' "$short_cwd")
@@ -25,7 +30,7 @@ fi
 
 # Model + effort segment
 effort=$(jq -r '.effortLevel // empty' ~/.claude/settings.json 2>/dev/null)
-if [ -n "$model" ] && [ "$model" != "null" ]; then
+if [ -n "$model" ]; then
     if [ -n "$effort" ]; then
         left=$(printf '%s \033[36m[%s·%s]\033[0m' "$left" "$model" "$effort")
     else
@@ -39,9 +44,6 @@ if [ -n "$used" ]; then
 fi
 
 # Rate limit segments
-five_h=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-seven_d=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
-
 now=$(date +%s)
 
 fmt_remaining() {
@@ -55,13 +57,11 @@ fmt_remaining() {
 
 limits=""
 if [ -n "$five_h" ]; then
-    five_h_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
     reset_str=""
     if [ -n "$five_h_reset" ]; then reset_str=" -> $(fmt_remaining "$five_h_reset")"; fi
     limits=$(printf '\033[33m5h:%s%%%s\033[0m' "$(printf '%.0f' "$five_h")" "$reset_str")
 fi
 if [ -n "$seven_d" ]; then
-    seven_d_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
     reset_str=""
     if [ -n "$seven_d_reset" ]; then reset_str=" -> $(fmt_remaining "$seven_d_reset")"; fi
     entry=$(printf '\033[31m7d:%s%%%s\033[0m' "$(printf '%.0f' "$seven_d")" "$reset_str")

@@ -4,7 +4,7 @@
 
 Hyprland + Waybar setup with transparent windows, nerd font icons, smart monitor management, and a unified dark theme across all components.
 
-All hardware-specific values (monitor names, resolutions, opacity, bluetooth devices) are configurable via variables at the top of `hyprland.conf` — no need to hunt through the config.
+All hardware-specific values (monitor names, resolutions, opacity) are configurable via locals at the top of `hyprland.lua` — no need to hunt through the config. (Hyprland ≥ 0.55 uses the Lua config manager; `hyprland.conf` is kept as a legacy fallback for older versions.)
 
 ## Quick Start
 
@@ -112,19 +112,18 @@ pacman -S pavucontrol
 # Session & power
 pacman -S elogind dbus
 
-# Terminal (kitty is default in hyprland.conf)
+# Terminal (kitty is default in hyprland.lua)
 pacman -S kitty
 
 # Other
 pacman -S brightnessctl network-manager-applet gnome-keyring
 ```
 
-> **Hardware-specific:** Edit variables at the top of `hyprland.conf` to match your hardware:
-> - `$internal` / `$external` — monitor names (run `hyprctl monitors` to find yours)
-> - `$internalMode` / `$externalMode` — resolutions and refresh rates
-> - `$btDevices` — bluetooth MAC address(es), space-separated
-> - `$screenshotDir` — where screenshots and recordings are saved
-> - `$activeOpacity` / `$inactiveOpacity` — window transparency levels
+> **Hardware-specific:** Edit the locals at the top of `hyprland.lua` to match your hardware:
+> - `internal` / `external` — monitor names (run `hyprctl monitors` to find yours)
+> - `internalMode` / `externalMode` — resolutions and refresh rates
+> - `screenshotDir` — where screenshots and recordings are saved
+> - `activeOpacity` / `inactiveOpacity` — window transparency levels
 
 ### System config (not in dotfiles)
 
@@ -182,7 +181,7 @@ Add your user to the `audio` group: `gpasswd -a $USER audio`
 
 All workspaces use waybar's native `hyprland/workspaces` module — no custom modules or generators needed.
 
-- **Scratchpads** — toggle-overlay apps defined in `hyprland.conf` with `workspace = special:name, on-created-empty:command`
+- **Scratchpads** — toggle-overlay apps defined in `hyprland.lua` with `hl.workspace_rule({ workspace = "special:name", on_created_empty = "command" })`
 - **Named workspaces** — dedicated app workspaces (IDE, Steam) with `workspace-launch.sh` for launch-on-first-visit
 - **Icons** — configured via waybar's `format-icons` mapping workspace names to nerd font glyphs
 - **Notifications** — apps like Telegram set the WM urgent hint natively, waybar highlights with `.urgent` CSS class (blue tint)
@@ -233,13 +232,13 @@ Config and state in `~/.config/wproulette/` — wallpaper directory, transition 
 ```
 Use `app-name` for apps with unique names, `body` (regex) for web app notifications that share the same browser app name.
 
-**Bluetooth headset won't auto-connect at boot** — The included `bt-autoconnect.sh` handles this. Set `$btDevices` in `hyprland.conf` to your device MAC(s). Sony/similar headsets need the host to initiate — BlueZ `AutoEnable` alone isn't enough.
+**Bluetooth headset won't auto-connect at boot** — Make sure `AutoEnable=true` is set in `/etc/bluetooth/main.conf` and the device is trusted (`bluetoothctl trust <MAC>`). Trusted devices reconnect on their own when powered on.
 
 **Brave password autofill not working** — Known bug in Brave 1.88.x/Chromium 146 on Wayland ([#50882](https://github.com/brave/brave-browser/issues/50882)). Fix: add `--enable-features=UseOzonePlatform` and `--ozone-platform=x11` to `~/.config/brave-flags.conf`.
 
 **Cursor disappearing/flickering on NVIDIA** — Set `no_hardware_cursors = true` in `hyprland.conf` cursor section. Hardware cursors work on newer NVIDIA drivers (590+) but may cause issues on older versions or multi-monitor setups.
 
-**Internal monitor keeps re-enabling** — `hyprctl keyword monitor` is a runtime override that doesn't survive DPMS/suspend cycles. The included `monitor-watcher.sh` listens to Hyprland events and re-enforces the disable.
+**Internal monitor keeps re-enabling** — the runtime disable (`hyprctl eval 'hl.monitor({ output = ..., disabled = true })'`) is an override that doesn't survive DPMS/suspend cycles or config reloads. The included `monitor-watcher.sh` listens to Hyprland events and re-enforces the disable. Note: re-enabling requires an explicit `disabled = false` — the flag is sticky.
 
 **Steam/Proton games crash on launch or stutter under shader compile (UE5, large titles)** — Modern engines open thousands of shader/PSO files in parallel during precompile. The default `nofile` ulimit (often 4096 on a fresh Artix install) gets exhausted and the game dies with a generic `EXCEPTION_ACCESS_VIOLATION` whose real cause only shows up in `~/steam-<appid>.log` after setting `PROTON_LOG=1` — look for `err:winediag:NtCreateFile Too many open files`. Fix via PAM (`pam_limits.so` is already in `system-auth`, no systemd needed) — create `/etc/security/limits.d/99-nofile.conf`:
 ```
