@@ -82,7 +82,7 @@
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
         "format": "󰥔 {:%H:%M %Z}",
         "format-alt": "󰃭 {:%Y-%m-%d}",
-        "interval": 1,
+        "interval": 60,
         "timezones": ["Europe/Podgorica", "Europe/Moscow"],
         "actions": {
             "on-scroll-up": "tz_up",
@@ -152,8 +152,9 @@
     "custom/layout": {
         "exec": "layout=$(hyprctl getoption general:layout -j | jq -r '.str'); if [ \"$layout\" = \"dwindle\" ]; then echo '{\"text\": \"󰕰\", \"tooltip\": \"Layout: dwindle\", \"class\": \"dwindle\"}'; else echo '{\"text\": \"󰕫\", \"tooltip\": \"Layout: master\", \"class\": \"master\"}'; fi",
         "return-type": "json",
-        "interval": 2,
-        "on-click": "next=$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle); hyprctl eval \"hl.config({ general = { layout = '$next' } })\""
+        "interval": "once",
+        "signal": 12,
+        "on-click": "next=$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle); hyprctl eval \"hl.config({ general = { layout = '$next' } })\"; pkill -RTMIN+12 waybar"
     },
     "custom/notification-center": {
         "tooltip": false,

@@ -11,7 +11,6 @@ local internalMode    = "1920x1080@144"
 local externalMode    = "1920x1080@120"
 local activeOpacity   = 0.95
 local inactiveOpacity = 0.90
-local btDevices       = "XX:XX:XX:XX:XX:XX YY:YY:YY:YY:YY:YY"
 local screenshotDir   = "~/Screenshots"
 
 ---------------------------
@@ -157,7 +156,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("wayscriber --daemon")
     hl.exec_cmd(externalConnectedCmd .. " && " .. disableInternalCmd)
     hl.exec_cmd("~/.config/hypr/scripts/monitor-watcher.sh")
-    hl.exec_cmd("~/.config/hypr/scripts/bt-autoconnect.sh " .. btDevices)
     hl.exec_cmd("~/.config/hypr/scripts/test-browser-watcher.sh")
     hl.exec_cmd("kitty yazi ~", { workspace = "2" })
 end)
