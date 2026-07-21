@@ -21,8 +21,8 @@ return {
   end,
   dependencies = {
     { "nvim-lua/plenary.nvim" },
-    -- optional picker
-    { "nvim-telescope/telescope.nvim", tag = "0.1.4" },
+    -- optional picker (version pinned in plugins/telescope.lua — don't re-pin here)
+    { "nvim-telescope/telescope.nvim" },
     -- optional picker
     { "ibhagwan/fzf-lua" },
     -- optional picker

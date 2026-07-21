@@ -279,8 +279,6 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 })
 apply_pycharm()
 
-vim.lsp.enable("lua_ls")
-vim.lsp.enable("astro")
-vim.lsp.enable("tsserver")
-vim.lsp.enable("rust_analyzer")
-vim.lsp.enable('jdtls')
+-- No vim.lsp.enable() calls here: mason-lspconfig's automatic_enable turns on
+-- every mason-installed server; servers outside mason are enabled in
+-- lua/plugins/lsp.lua next to their config (e.g. lemminx).
