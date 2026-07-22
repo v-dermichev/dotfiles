@@ -90,6 +90,11 @@ map.set("n", "<leader><leader>e", function()
   vim.api.nvim_buf_set_lines(0, si - 1, ei, false, out)
 end, vim.tbl_extend("force", options, { desc = "Toggle name in export block" }))
 
+-- Interactive NuGet installer (fzf live search, download counts, version pick)
+map.set("n", "<leader><leader>n", function()
+  require("config.nuget").pick()
+end, vim.tbl_extend("force", options, { desc = "NuGet: search & install package" }))
+
 -- Toggle LSP inlay hints for current buffer
 map.set("n", "<leader>ih", function()
   local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = 0 })
