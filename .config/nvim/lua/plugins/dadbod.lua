@@ -50,6 +50,26 @@ return {
         return mariadb_shim
       end
 
+      -- Unquote and adapt a connection url for this machine (mariadb shim,
+      -- local self-signed certs — see the comments at each step).
+      local function normalize_url(url)
+        url = url:gsub('^"(.*)"$', "%1"):gsub("^'(.*)'$", "%1")
+        if url:match("^mysql://") and mysql_is_mariadb() then
+          url = "mariadb://" .. url:sub(#"mysql://" + 1)
+        end
+        -- MariaDB client 11.4+ verifies server certs by default and refuses
+        -- the self-signed ones local/docker dev servers use (ERROR 2026).
+        -- For local connections, keep TLS but drop the verification — unless
+        -- the url already carries params.
+        local host = url:match("^m[%w]+://[^@/]*@([^:/?]+)")
+        if (host == "localhost" or host == "127.0.0.1")
+            and (url:match("^mariadb://") or url:match("^mysql://"))
+            and not url:find("?", 1, true) then
+          url = url .. "?ssl-verify-server-cert=off"
+        end
+        return url
+      end
+
       local function load_project_dbs()
         local dbs = {}
         for _, envname in ipairs({ ".env", ".env.local" }) do
@@ -57,22 +77,14 @@ return {
           if ok then
             for _, l in ipairs(env_lines) do
               local name, url = l:match("^%s*e?x?p?o?r?t?%s*DB_UI_([%w_]+)%s*=%s*(.-)%s*$")
+              if not name then
+                -- the app's own connection var doubles as a dev connection;
+                -- name it after the database in the url path
+                url = l:match("^%s*e?x?p?o?r?t?%s*DATABASE_URL%s*=%s*(.-)%s*$")
+                if url then name = url:match("/([%w_%-]+)%??[^/]*$") or "env" end
+              end
               if name and url and url ~= "" then
-                url = url:gsub('^"(.*)"$', "%1"):gsub("^'(.*)'$", "%1")
-                if url:match("^mysql://") and mysql_is_mariadb() then
-                  url = "mariadb://" .. url:sub(#"mysql://" + 1)
-                end
-                -- MariaDB client 11.4+ verifies server certs by default and
-                -- refuses the self-signed ones local/docker dev servers use
-                -- (ERROR 2026). For local connections, keep TLS but drop the
-                -- verification — unless the url already carries params.
-                local host = url:match("^m[%w]+://[^@/]*@([^:/?]+)")
-                if (host == "localhost" or host == "127.0.0.1")
-                    and (url:match("^mariadb://") or url:match("^mysql://"))
-                    and not url:find("?", 1, true) then
-                  url = url .. "?ssl-verify-server-cert=off"
-                end
-                table.insert(dbs, { name = name:lower(), url = url })
+                table.insert(dbs, { name = name:lower(), url = normalize_url(url) })
               end
             end
           end
