@@ -12,6 +12,21 @@ vim.filetype.add({
   },
 })
 
+-- Plugins that load files via bufadd/bufload (solution scanners, link
+-- openers) skip filetype detection, and nvim never re-runs it when the
+-- buffer is merely displayed later — leaving it with no ft, so no
+-- treesitter/LSP/highlighting (repeatedly seen on csproj members of a slnx).
+-- Detect on first display of any undetected file buffer.
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  group = vim.api.nvim_create_augroup("DetectBufloadedFiletype", { clear = true }),
+  callback = function(ev)
+    if vim.bo[ev.buf].buftype == "" and vim.bo[ev.buf].filetype == ""
+        and vim.api.nvim_buf_get_name(ev.buf) ~= "" then
+      vim.api.nvim_buf_call(ev.buf, function() vim.cmd("filetype detect") end)
+    end
+  end,
+})
+
 if vim.g.neovide then
     vim.g.neovide_window_width = 1200
     vim.g.neovide_window_height = 800
