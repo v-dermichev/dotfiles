@@ -30,7 +30,9 @@ cached_get() {
 [ "$1" = "search" ] || exit 1
 q="$2"
 {
-  cached_get "$API?q=$(urlenc "$q")&take=40&prerelease=false" |
+  # semVerLevel=2.0.0: packages whose versions carry build metadata (SemVer 2,
+  # e.g. MySql.EntityFrameworkCore 10.0.7+MySQL9.7.0) are otherwise omitted
+  cached_get "$API?q=$(urlenc "$q")&take=40&prerelease=false&semVerLevel=2.0.0" |
     jq -r "$HUM"' .data[] | [.id, .version, (.totalDownloads // 0 | h), (if .verified then "✓" else "·" end)] | @tsv'
   # The search index sometimes misses real packages (e.g. MySql.EntityFrameworkCore).
   # If the query looks like an exact id, probe flatcontainer and append it.

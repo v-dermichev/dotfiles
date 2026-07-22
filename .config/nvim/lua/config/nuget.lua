@@ -139,7 +139,7 @@ end
 -- build_preview(id, cb): cb(lines) — assembled package info card
 local function build_preview(id, cb)
   published_date(id, function(pub)
-    fetch(API .. "?q=packageid:" .. urlencode(id), function(info)
+    fetch(API .. "?q=packageid:" .. urlencode(id) .. "&semVerLevel=2.0.0", function(info)
       local d = info and info.data and info.data[1]
       if d then
         local lines = {
@@ -284,7 +284,9 @@ local function dotnet_op(op, package_id, version, proj, on_done, progress)
       return
     end
     local cmd = { "dotnet", op, p, "package", package_id }
-    if version then vim.list_extend(cmd, { "--version", version }) end
+    -- strip SemVer build metadata ("10.0.7+MySQL9.7.0" → "10.0.7"): it is not
+    -- part of the package version identity dotnet resolves against
+    if version then vim.list_extend(cmd, { "--version", (version:gsub("%+.*$", "")) }) end
     local pretty = package_id .. (version and ("@" .. version) or "")
     local verb = op == "remove" and "removing" or "adding"
     local prefix = progress and ("[" .. progress .. "] ") or ""
@@ -366,7 +368,7 @@ end
 -- ---------------------------------------------------------------------------
 local function pick_version(package_id)
   require("fzf-lua").fzf_exec(function(fzf_cb)
-    fetch(API .. "?q=packageid:" .. urlencode(package_id), function(info)
+    fetch(API .. "?q=packageid:" .. urlencode(package_id) .. "&semVerLevel=2.0.0", function(info)
       local d = info and info.data and info.data[1]
       if d and d.versions and #d.versions > 0 then
         for i = #d.versions, 1, -1 do
