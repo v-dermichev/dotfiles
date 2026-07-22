@@ -175,6 +175,38 @@ return {
         callback = load_project_dbs,
       })
 
+      -- Drawer: <leader>r on a saved query runs it WITHOUT leaving a query
+      -- editor open — SelectLine + ExecuteQuery composed in one tick, then
+      -- the transient buffer is dropped and focus returns to the drawer.
+      -- On non-query lines it behaves like plain SelectLine (toggle/expand).
+      vim.api.nvim_create_autocmd("FileType", {
+        group = group,
+        pattern = "dbui",
+        callback = function(ev)
+          vim.keymap.set("n", "<leader>r", function()
+            local drawer_win = vim.api.nvim_get_current_win()
+            local before = vim.api.nvim_get_current_buf()
+            vim.cmd([[execute "normal \<Plug>(DBUI_SelectLine)"]])
+            local qbuf = vim.api.nvim_get_current_buf()
+            local ft = vim.bo[qbuf].filetype
+            if qbuf ~= before and (ft == "sql" or ft == "mysql" or ft == "plsql") then
+              vim.cmd([[execute "normal \<Plug>(DBUI_ExecuteQuery)"]])
+              if vim.api.nvim_win_is_valid(drawer_win) then
+                vim.api.nvim_set_current_win(drawer_win)
+              end
+              -- :DB has already captured the query text; the editor buffer
+              -- SelectLine opened is transient — drop it next tick.
+              vim.schedule(function()
+                if vim.api.nvim_buf_is_valid(qbuf) then
+                  pcall(vim.api.nvim_buf_delete, qbuf, { force = true })
+                end
+                require("config.layout").apply()
+              end)
+            end
+          end, { buffer = ev.buf, desc = "DB: run query under cursor (no editor)" })
+        end,
+      })
+
       -- Query buffers: <leader>r runs the statement (normal: whole buffer /
       -- visual: selection) — mirrors the global "<leader>r runs current file".
       vim.api.nvim_create_autocmd("FileType", {
