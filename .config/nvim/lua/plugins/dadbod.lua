@@ -222,21 +222,21 @@ return {
                 return -- plain toggle/expand: nothing opened
               end
               vim.cmd([[execute "normal \<Plug>(DBUI_ExecuteQuery)"]])
+              -- Restore SAME-TICK: :DB captured the query text synchronously,
+              -- and any repaint between swap-in and swap-back is the flicker.
+              if editor_win and vim.api.nvim_win_is_valid(editor_win)
+                  and editor_buf and vim.api.nvim_buf_is_valid(editor_buf) then
+                pcall(vim.api.nvim_win_set_buf, editor_win, editor_buf)
+              elseif not editor_win and vim.api.nvim_win_is_valid(qwin) then
+                pcall(vim.api.nvim_win_close, qwin, false)
+              end
               if vim.api.nvim_win_is_valid(drawer_win) then
                 vim.api.nvim_set_current_win(drawer_win)
               end
-              vim.schedule(function()
-                if editor_win and vim.api.nvim_win_is_valid(editor_win)
-                    and editor_buf and vim.api.nvim_buf_is_valid(editor_buf) then
-                  pcall(vim.api.nvim_win_set_buf, editor_win, editor_buf)
-                elseif not editor_win and vim.api.nvim_win_is_valid(qwin) then
-                  pcall(vim.api.nvim_win_close, qwin, false)
-                end
-                if vim.api.nvim_buf_is_valid(qbuf) then
-                  pcall(vim.api.nvim_buf_delete, qbuf, { force = true })
-                end
-                require("config.layout").apply()
-              end)
+              if vim.api.nvim_buf_is_valid(qbuf) then
+                pcall(vim.api.nvim_buf_delete, qbuf, { force = true })
+              end
+              require("config.layout").sync()
               return
             end
             local slug = vim.fn.fnamemodify(path, ":h:t")
