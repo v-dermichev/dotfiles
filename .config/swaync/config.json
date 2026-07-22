@@ -24,12 +24,12 @@
       "run-on": "receive"
     },
     "telegram-focus": {
-      "exec": "hyprctl dispatch 'hl.dsp.workspace.toggle_special(\"telegram\")'",
-      "app-name": "Telegram Desktop",
+      "exec": "/home/work/.config/hypr/scripts/toggle-special.sh telegram",
+      "app-name": ".*[Tt]elegram.*",
       "run-on": "action"
     },
     "messenger-focus": {
-      "exec": "hyprctl dispatch 'hl.dsp.workspace.toggle_special(\"messenger\")'",
+      "exec": "/home/work/.config/hypr/scripts/toggle-special.sh messenger",
       "body": "messenger\\.360\\.yandex\\.com",
       "run-on": "action"
     }
