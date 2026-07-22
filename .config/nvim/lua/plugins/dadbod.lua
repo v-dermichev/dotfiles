@@ -22,22 +22,30 @@ return {
       {
         "<leader>q",
         function()
-          vim.cmd("DBUIToggle")
           -- Share the left column with neo-tree instead of adding a second
-          -- sidebar: split the tree horizontally and dock the drawer below it.
-          vim.schedule(function()
+          -- sidebar: split the tree horizontally and dock the drawer below
+          -- it. Runs synchronously in the same tick as DBUIToggle so the
+          -- drawer never paints at its default position first (same
+          -- no-jump pattern as neo-tree's terminal-slot redock); the
+          -- scheduled pass is an idempotent safety net.
+          local function dock_drawer()
             local drawer, tree
             for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
               local ft = vim.bo[vim.api.nvim_win_get_buf(w)].filetype
               if ft == "dbui" then drawer = w end
               if ft == "neo-tree" then tree = w end
             end
-            if drawer and tree then
-              pcall(vim.fn.win_splitmove, drawer, tree, { rightbelow = true })
-              local total = vim.api.nvim_win_get_height(tree) + vim.api.nvim_win_get_height(drawer)
-              pcall(vim.api.nvim_win_set_height, drawer, math.floor(total / 2))
+            if not (drawer and tree) then return end
+            if vim.api.nvim_win_get_position(drawer)[2] == vim.api.nvim_win_get_position(tree)[2] then
+              return -- already sharing the column
             end
-          end)
+            pcall(vim.fn.win_splitmove, drawer, tree, { rightbelow = true })
+            local total = vim.api.nvim_win_get_height(tree) + vim.api.nvim_win_get_height(drawer)
+            pcall(vim.api.nvim_win_set_height, drawer, math.floor(total / 2))
+          end
+          vim.cmd("DBUIToggle")
+          dock_drawer()
+          vim.schedule(dock_drawer)
         end,
         desc = "DB: toggle query UI",
       },
@@ -183,10 +191,28 @@ return {
         group = group,
         pattern = "dbout",
         callback = function(ev)
-          vim.schedule(function()
+          -- Synchronous in the FileType tick so the results pane never
+          -- flashes at the query-window split before jumping to the slot;
+          -- the scheduled pass is an idempotent safety net for any path
+          -- where the window doesn't exist yet at ft-set time.
+          local function dock_results()
             pcall(function()
               local tt = require("config.term_tabs")
+              local win
+              for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+                if vim.api.nvim_win_get_buf(w) == ev.buf
+                    and vim.api.nvim_win_get_config(w).relative == "" then
+                  win = w
+                  break
+                end
+              end
+              if not win then return end
               local prev = vim.api.nvim_get_current_win()
+              -- already docked: full width at the bottom → nothing to do
+              if vim.api.nvim_win_get_width(win) >= vim.o.columns then
+                tt.register_ext({ key = "db", glyph = "\xef\x87\x80", label = "db", buf = ev.buf })
+                return
+              end
               -- clear the slot BEFORE registering: the old "db" registration
               -- still points at the previous results pane so it gets closed
               -- too; this dbout's window isn't registered yet and survives
@@ -197,23 +223,15 @@ return {
                 label = "db",
                 buf = ev.buf,
               })
-              local win
-              for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-                if vim.api.nvim_win_get_buf(w) == ev.buf
-                    and vim.api.nvim_win_get_config(w).relative == "" then
-                  win = w
-                  break
-                end
-              end
-              if win then
-                vim.api.nvim_win_call(win, function() vim.cmd("wincmd J") end)
-                pcall(vim.api.nvim_win_set_height, win, 12)
-              end
+              vim.api.nvim_win_call(win, function() vim.cmd("wincmd J") end)
+              pcall(vim.api.nvim_win_set_height, win, 12)
               if vim.api.nvim_win_is_valid(prev) then
                 pcall(vim.api.nvim_set_current_win, prev)
               end
             end)
-          end)
+          end
+          dock_results()
+          vim.schedule(dock_results)
         end,
       })
     end,
