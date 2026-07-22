@@ -27,29 +27,15 @@ return {
       {
         "<leader>q",
         function()
-          -- Share the left column with neo-tree instead of adding a second
-          -- sidebar. :DBUI passes command modifiers through to the drawer
-          -- window creation, so running `belowright DBUI` from the tree
-          -- window makes the drawer be BORN as a horizontal split below it —
-          -- nothing to move afterwards, so no flicker and no width drift
-          -- (the old splitmove approach leaked width into the tree on every
-          -- toggle and repainted between the default and final positions).
+          -- Placement contract lives in config.layout: drawer shares the
+          -- tree's column (or sits left of the editor when the tree is off).
+          -- Here: create/close the drawer in the right place, then normalize.
+          local layout = require("config.layout")
           local drawer, tree
           for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
             local ft = vim.bo[vim.api.nvim_win_get_buf(w)].filetype
             if ft == "dbui" then drawer = w end
             if ft == "neo-tree" then tree = w end
-          end
-          -- snapshot the bottom slot height: 'equalalways' can rebalance on
-          -- any split/close; restore keeps the terminal/results pane stable
-          local slot_win, slot_h
-          for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-            local b = vim.api.nvim_win_get_buf(w)
-            if vim.api.nvim_win_get_config(w).relative == ""
-                and (vim.bo[b].buftype == "terminal" or vim.bo[b].filetype == "dbout") then
-              slot_win, slot_h = w, vim.api.nvim_win_get_height(w)
-              break
-            end
           end
           if drawer then
             vim.cmd("DBUIClose")
@@ -57,9 +43,6 @@ return {
             vim.api.nvim_set_current_win(tree)
             vim.cmd("belowright DBUI")
           else
-            -- No tree: split the main editor window instead of letting DBUI
-            -- create a frame-level full-height column, which would squeeze
-            -- the bottom terminal slot's width.
             for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
               local b = vim.api.nvim_win_get_buf(w)
               if vim.api.nvim_win_get_config(w).relative == "" and vim.bo[b].buftype == "" then
@@ -68,13 +51,8 @@ return {
               end
             end
             vim.cmd("aboveleft vertical DBUI")
-            if vim.bo[vim.api.nvim_get_current_buf()].filetype == "dbui" then
-              vim.api.nvim_win_set_width(0, 32) -- match the tree column width
-            end
           end
-          if slot_win and vim.api.nvim_win_is_valid(slot_win) then
-            pcall(vim.api.nvim_win_set_height, slot_win, slot_h)
-          end
+          layout.sync()
         end,
         desc = "DB: toggle query UI",
       },
@@ -237,21 +215,14 @@ return {
               end
               if not win then return end
               local prev = vim.api.nvim_get_current_win()
-              -- dadbod fires FileType twice per execution; once this buffer
-              -- IS the registered "db" pane, clearing again would close our
-              -- own window — just re-assert the dock geometry below.
+              -- occupancy: exactly one slot pane. dadbod fires FileType twice
+              -- per execution; once this buffer IS the registered "db" pane,
+              -- clearing again would close our own window.
               local already_adopted = false
               for _, e in ipairs(tt._ext) do
                 if e.key == "db" and e.buf == ev.buf then already_adopted = true end
               end
               if not already_adopted then
-                -- Always clear the slot, even when the results window is
-                -- already full width: dadbod opens it via `botright pedit`,
-                -- which LOOKS docked but stacks below whatever the slot was
-                -- showing (the extra-terminal-pane bug). The old "db"
-                -- registration still points at the previous results pane so
-                -- it gets closed too; this dbout's window isn't registered
-                -- yet and survives.
                 tt.hide_all()
                 tt.register_ext({
                   key = "db",
@@ -260,8 +231,8 @@ return {
                   buf = ev.buf,
                 })
               end
-              vim.api.nvim_win_call(win, function() vim.cmd("wincmd J") end)
-              pcall(vim.api.nvim_win_set_height, win, 12)
+              -- geometry: canonical layout handles the docking
+              require("config.layout").apply()
               if vim.api.nvim_win_is_valid(prev) then
                 pcall(vim.api.nvim_set_current_win, prev)
               end

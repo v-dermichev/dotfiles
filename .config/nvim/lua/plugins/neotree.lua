@@ -189,33 +189,13 @@ return {
     -- never flashes at editor width. A scheduled pass follows as an idempotent
     -- safety net for any path where the synchronous move is blocked (it no-ops
     -- once the pane is already full width).
-    -- If the DB drawer was opened before the tree, it owns its own left
-    -- column; opening the tree then produces two side-by-side sidebars and
-    -- crushes the editor. Pull the drawer under the tree so they share the
-    -- column (same layout the <leader>q flow creates when the tree is open).
-    local function adopt_db_drawer()
-      local tree_win, drawer_win
-      for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        local ft = vim.bo[vim.api.nvim_win_get_buf(w)].filetype
-        if ft == "neo-tree" then tree_win = w end
-        if ft == "dbui" then drawer_win = w end
-      end
-      if tree_win and drawer_win
-          and vim.api.nvim_win_get_position(tree_win)[2] ~= vim.api.nvim_win_get_position(drawer_win)[2] then
-        pcall(vim.fn.win_splitmove, drawer_win, tree_win, { rightbelow = true })
-      end
-    end
-
     vim.api.nvim_create_autocmd("BufWinEnter", {
       group = group,
       callback = function(args)
         if vim.bo[args.buf].filetype ~= "neo-tree" then return end
-        pcall(function() require("config.term_tabs").redock() end)
-        adopt_db_drawer()
-        vim.schedule(function()
-          require("config.term_tabs").redock()
-          adopt_db_drawer()
-        end)
+        -- Canonical geometry (slot full-width bottom, DB drawer under the
+        -- tree, …) is enforced by config.layout — same-tick + scheduled.
+        require("config.layout").sync()
       end,
     })
 
