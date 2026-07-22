@@ -19,7 +19,7 @@
   "script-fail-notify": false,
   "scripts": {
     "notification-sound": {
-      "exec": "sh -c 'pw-play /usr/share/sounds/freedesktop/stereo/complete.oga &'",
+      "exec": "sh -c 'setsid -f pw-play /usr/share/sounds/freedesktop/stereo/complete.oga >/dev/null 2>&1'",
       "app-name": ".*",
       "run-on": "receive"
     },
