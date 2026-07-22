@@ -237,22 +237,60 @@ local function resolve_csproj(on_done)
   vim.ui.select(all, { prompt = "Add package to project:" }, on_done)
 end
 
-local function install(package_id, version)
-  resolve_csproj(function(proj)
-    if not proj then return end
-    local cmd = { "dotnet", "add", proj, "package", package_id }
+-- dotnet add/remove rewrite the csproj on disk; if it's open in a buffer,
+-- pick the change up (checktime reloads unmodified buffers via autoread).
+local function refresh_csproj_buf(proj)
+  local want = vim.fn.fnamemodify(proj, ":p")
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf)
+        and vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":p") == want then
+      vim.api.nvim_buf_call(buf, function() vim.cmd("checktime") end)
+    end
+  end
+end
+
+-- run a dotnet package operation against proj (resolved when nil)
+local function dotnet_op(op, package_id, version, proj)
+  local function run(p)
+    if not p then return end
+    local cmd = { "dotnet", op, p, "package", package_id }
     if version then vim.list_extend(cmd, { "--version", version }) end
     local pretty = package_id .. (version and ("@" .. version) or "")
-    vim.notify("NuGet: adding " .. pretty .. " → " .. vim.fn.fnamemodify(proj, ":t") .. " …")
+    local verb = op == "remove" and "removing" or "adding"
+    vim.notify("NuGet: " .. verb .. " " .. pretty .. " → " .. vim.fn.fnamemodify(p, ":t") .. " …")
     vim.system(cmd, { text = true }, vim.schedule_wrap(function(out)
       if out.code == 0 then
-        vim.notify("NuGet: installed " .. pretty, vim.log.levels.INFO)
+        vim.notify("NuGet: " .. (op == "remove" and "removed " or "installed ") .. pretty,
+          vim.log.levels.INFO)
+        refresh_csproj_buf(p)
       else
-        vim.notify("NuGet: failed to add " .. pretty .. "\n" ..
+        vim.notify("NuGet: dotnet " .. op .. " failed for " .. pretty .. "\n" ..
           (out.stderr ~= "" and out.stderr or out.stdout), vim.log.levels.ERROR)
       end
     end))
-  end)
+  end
+  if proj then run(proj) else resolve_csproj(run) end
+end
+
+local function install(package_id, version, proj)
+  dotnet_op("add", package_id, version, proj)
+end
+
+-- PackageReference entries of a csproj: { { id = ..., version = ... }, ... }
+-- (attribute order tolerant; child-element <Version> not handled — rare)
+local function installed_packages(proj)
+  local ok, file_lines = pcall(vim.fn.readfile, proj)
+  if not ok then return {} end
+  local pkgs = {}
+  for _, l in ipairs(file_lines) do
+    local tag = l:match("<PackageReference%s+([^/>]+)")
+    if tag then
+      local id = tag:match('Include="([^"]+)"')
+      local version = tag:match('Version="([^"]+)"')
+      if id then table.insert(pkgs, { id = id, version = version or "?" }) end
+    end
+  end
+  return pkgs
 end
 
 local function selected_id(selected)
@@ -294,6 +332,81 @@ local function pick_version(package_id)
   })
 end
 
+-- <leader>pr — remove an installed package (previewed like the add picker)
+function M.remove()
+  resolve_csproj(function(proj)
+    if not proj then return end
+    local pkgs = installed_packages(proj)
+    if #pkgs == 0 then
+      return vim.notify("NuGet: no PackageReference entries in " ..
+        vim.fn.fnamemodify(proj, ":t"), vim.log.levels.WARN)
+    end
+    local lines = {}
+    for _, p in ipairs(pkgs) do
+      table.insert(lines, ("%s\t%s"):format(p.id, p.version))
+    end
+    require("fzf-lua").fzf_exec(lines, {
+      prompt = "NuGet remove> ",
+      previewer = make_previewer(),
+      fzf_opts = {
+        ["--delimiter"] = "\t",
+        ["--nth"] = "1",
+        ["--header"] = vim.fn.fnamemodify(proj, ":t") .. " │ enter: remove package",
+      },
+      winopts = { preview = { horizontal = "right:55%" } },
+      actions = {
+        ["default"] = function(selected)
+          local id = selected_id(selected)
+          if id then dotnet_op("remove", id, nil, proj) end
+        end,
+      },
+    })
+  end)
+end
+
+-- <leader>pu — update an installed package to the latest stable
+function M.update()
+  resolve_csproj(function(proj)
+    if not proj then return end
+    local pkgs = installed_packages(proj)
+    if #pkgs == 0 then
+      return vim.notify("NuGet: no PackageReference entries in " ..
+        vim.fn.fnamemodify(proj, ":t"), vim.log.levels.WARN)
+    end
+    require("fzf-lua").fzf_exec(function(fzf_cb)
+      local remaining = #pkgs
+      for _, p in ipairs(pkgs) do
+        fetch(FLAT .. "/" .. p.id:lower() .. "/index.json", function(flat)
+          local latest
+          for _, v in ipairs(flat and flat.versions or {}) do
+            if not v:find("-", 1, true) then latest = v end
+          end
+          local mark = (latest and latest ~= p.version) and "↑ " .. latest or "up-to-date"
+          fzf_cb(("%s\t%s\t%s"):format(p.id, p.version, mark))
+          remaining = remaining - 1
+          if remaining == 0 then fzf_cb() end
+        end)
+      end
+    end, {
+      prompt = "NuGet update> ",
+      previewer = make_previewer(),
+      fzf_opts = {
+        ["--delimiter"] = "\t",
+        ["--nth"] = "1",
+        ["--header"] = vim.fn.fnamemodify(proj, ":t") .. " │ enter: update to latest",
+      },
+      winopts = { preview = { horizontal = "right:55%" } },
+      actions = {
+        ["default"] = function(selected)
+          local id = selected_id(selected)
+          if id then dotnet_op("add", id, nil, proj) end
+        end,
+      },
+    })
+  end)
+end
+
+-- <leader>pa — search & add a package
 function M.pick()
   -- fzf-lua hands the live contents fn its args as a list: args[1] = query
   require("fzf-lua").fzf_live(function(args)
@@ -323,6 +436,11 @@ function M.pick()
 end
 
 -- exposed for headless testing only
-M._test = { fetch = fetch, build_preview = build_preview, humanize = humanize }
+M._test = {
+  fetch = fetch,
+  build_preview = build_preview,
+  humanize = humanize,
+  installed_packages = installed_packages,
+}
 
 return M
