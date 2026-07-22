@@ -104,4 +104,24 @@ function M.sync()
   vim.schedule(M.apply)
 end
 
+-- Auto-normalize when windows/buffers change: catches rogue splits made by
+-- plugins that manage their own windows (e.g. dadbod's focus_window creating
+-- a half-screen editor when none existed, or a sidebar left frame-height
+-- after the last editor closed). Debounced to one apply per tick; the hot
+-- paths still call sync() themselves for the same-tick no-jump guarantee.
+local pending = false
+function M.setup()
+  vim.api.nvim_create_autocmd({ "BufWinEnter", "WinClosed", "TermOpen" }, {
+    group = vim.api.nvim_create_augroup("LayoutAuto", { clear = true }),
+    callback = function()
+      if pending then return end
+      pending = true
+      vim.schedule(function()
+        pending = false
+        M.apply()
+      end)
+    end,
+  })
+end
+
 return M

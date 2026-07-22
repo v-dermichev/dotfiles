@@ -3,6 +3,7 @@ require("config.keymaps")
 require("config.options")
 require("config.venv").setup()
 require("config.line_length").setup()
+require("config.layout").setup()
 
 vim.filetype.add({
   extension = {

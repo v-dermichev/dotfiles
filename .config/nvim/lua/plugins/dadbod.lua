@@ -175,34 +175,61 @@ return {
         callback = load_project_dbs,
       })
 
-      -- Drawer: <leader>r on a saved query runs it WITHOUT leaving a query
-      -- editor open — SelectLine + ExecuteQuery composed in one tick, then
-      -- the transient buffer is dropped and focus returns to the drawer.
-      -- On non-query lines it behaves like plain SelectLine (toggle/expand).
+      -- Drawer: <leader>r on a saved query runs it WITHOUT any editor
+      -- buffer: the query FILE is executed through a scratch buffer + %DB
+      -- (dadbod captures the range synchronously; dbout docks via layout).
+      -- Resolution: line label -> save_location/<conn-slug>/<label>.sql,
+      -- url by matching the slug against vim.g.dbs + connections.json.
+      -- Non-query lines fall back to plain SelectLine (toggle/expand).
       vim.api.nvim_create_autocmd("FileType", {
         group = group,
         pattern = "dbui",
         callback = function(ev)
           vim.keymap.set("n", "<leader>r", function()
-            local drawer_win = vim.api.nvim_get_current_win()
-            local before = vim.api.nvim_get_current_buf()
-            vim.cmd([[execute "normal \<Plug>(DBUI_SelectLine)"]])
-            local qbuf = vim.api.nvim_get_current_buf()
-            local ft = vim.bo[qbuf].filetype
-            if qbuf ~= before and (ft == "sql" or ft == "mysql" or ft == "plsql") then
-              vim.cmd([[execute "normal \<Plug>(DBUI_ExecuteQuery)"]])
-              if vim.api.nvim_win_is_valid(drawer_win) then
-                vim.api.nvim_set_current_win(drawer_win)
-              end
-              -- :DB has already captured the query text; the editor buffer
-              -- SelectLine opened is transient — drop it next tick.
-              vim.schedule(function()
-                if vim.api.nvim_buf_is_valid(qbuf) then
-                  pcall(vim.api.nvim_buf_delete, qbuf, { force = true })
-                end
-                require("config.layout").apply()
-              end)
+            local label = vim.api.nvim_get_current_line():match("([%w%._%-]+)%s*$")
+            local path
+            if label then
+              local base = vim.g.db_ui_save_location
+              path = vim.fn.glob(base .. "/*/" .. label, false, true)[1]
+                or vim.fn.glob(base .. "/*/" .. label .. ".sql", false, true)[1]
             end
+            if not path then
+              vim.cmd([[execute "normal \<Plug>(DBUI_SelectLine)"]])
+              return
+            end
+            local slug = vim.fn.fnamemodify(path, ":h:t")
+            local url
+            local function try(name, u)
+              if not url and vim.fn["db_ui#utils#slug"](name) == slug then url = u end
+            end
+            local dbs = vim.g.dbs or {}
+            if vim.islist and vim.islist(dbs) or dbs[1] then
+              for _, d in ipairs(dbs) do try(d.name, d.url) end
+            else
+              for n, u in pairs(dbs) do try(n, u) end
+            end
+            if not url then
+              local ok, conns = pcall(function()
+                return vim.json.decode(table.concat(
+                  vim.fn.readfile(vim.g.db_ui_save_location .. "/connections.json"), "\n"))
+              end)
+              if ok then
+                for _, c in ipairs(conns or {}) do try(c.name, c.url) end
+              end
+            end
+            if not url then
+              vim.notify("DB: no connection found for " .. slug, vim.log.levels.WARN)
+              return
+            end
+            local scratch = vim.api.nvim_create_buf(false, true)
+            vim.api.nvim_buf_set_lines(scratch, 0, -1, false, vim.fn.readfile(path))
+            vim.api.nvim_buf_call(scratch, function()
+              vim.cmd("%DB " .. vim.fn.fnameescape(url))
+            end)
+            vim.schedule(function()
+              pcall(vim.api.nvim_buf_delete, scratch, { force = true })
+            end)
+            require("config.layout").sync()
           end, { buffer = ev.buf, desc = "DB: run query under cursor (no editor)" })
         end,
       })
