@@ -19,7 +19,28 @@ return {
     },
     cmd = { "DBUI", "DBUIToggle", "DBUIAddConnection", "DBUIFindBuffer", "DB" },
     keys = {
-      { "<leader>q", "<cmd>DBUIToggle<cr>", desc = "DB: toggle query UI" },
+      {
+        "<leader>q",
+        function()
+          vim.cmd("DBUIToggle")
+          -- Share the left column with neo-tree instead of adding a second
+          -- sidebar: split the tree horizontally and dock the drawer below it.
+          vim.schedule(function()
+            local drawer, tree
+            for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+              local ft = vim.bo[vim.api.nvim_win_get_buf(w)].filetype
+              if ft == "dbui" then drawer = w end
+              if ft == "neo-tree" then tree = w end
+            end
+            if drawer and tree then
+              pcall(vim.fn.win_splitmove, drawer, tree, { rightbelow = true })
+              local total = vim.api.nvim_win_get_height(tree) + vim.api.nvim_win_get_height(drawer)
+              pcall(vim.api.nvim_win_set_height, drawer, math.floor(total / 2))
+            end
+          end)
+        end,
+        desc = "DB: toggle query UI",
+      },
     },
     init = function()
       vim.g.db_ui_use_nerd_fonts = 1
@@ -152,21 +173,45 @@ return {
         end,
       })
 
-      -- Adopt the results buffer as a "db" tab in the shared bottom slot
-      -- (display-level adoption like octo/neotest — dadbod keeps managing the
-      -- window; the tab re-shows the latest results after it's been hidden).
+      -- Adopt the results buffer as the "db" tab of the shared bottom slot.
+      -- Full takeover (unlike octo's display-level adoption): dadbod creates a
+      -- NEW dbout buffer per execution and splits wherever the query window
+      -- is, which piled up extra panes next to whatever the slot showed.
+      -- Hide the slot's current occupant (incl. the previous results pane,
+      -- via its stale "db" registration), then dock this one full-width.
       vim.api.nvim_create_autocmd("FileType", {
         group = group,
         pattern = "dbout",
         callback = function(ev)
           vim.schedule(function()
             pcall(function()
-              require("config.term_tabs").register_ext({
+              local tt = require("config.term_tabs")
+              local prev = vim.api.nvim_get_current_win()
+              -- clear the slot BEFORE registering: the old "db" registration
+              -- still points at the previous results pane so it gets closed
+              -- too; this dbout's window isn't registered yet and survives
+              tt.hide_all()
+              tt.register_ext({
                 key = "db",
                 glyph = "\xef\x87\x80", -- nf-fa-database (U+F1C0)
                 label = "db",
                 buf = ev.buf,
               })
+              local win
+              for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+                if vim.api.nvim_win_get_buf(w) == ev.buf
+                    and vim.api.nvim_win_get_config(w).relative == "" then
+                  win = w
+                  break
+                end
+              end
+              if win then
+                vim.api.nvim_win_call(win, function() vim.cmd("wincmd J") end)
+                pcall(vim.api.nvim_win_set_height, win, 12)
+              end
+              if vim.api.nvim_win_is_valid(prev) then
+                pcall(vim.api.nvim_set_current_win, prev)
+              end
             end)
           end)
         end,
