@@ -20,10 +20,22 @@ handle_monitor_change() {
     fi
 }
 
+# swaync's notification layer binds to an output at startup; when the output
+# set changes it can be left rendering popups on a disabled screen while the
+# center silently keeps collecting them. Restart to rebind. Only on real
+# monitor add/remove — not DPMS wakes — since a restart drops popup history.
+restart_swaync() {
+    pkill -x swaync && setsid -f swaync >/dev/null 2>&1
+}
+
 while true; do
     socat -u "UNIX-CONNECT:$SOCKET" - 2>/dev/null | while IFS= read -r line; do
         case "$line" in
-            monitoradded*|monitorremoved*|dpms\>\>1*)
+            monitoradded*|monitorremoved*)
+                handle_monitor_change
+                restart_swaync
+                ;;
+            dpms\>\>1*)
                 handle_monitor_change
                 ;;
         esac
