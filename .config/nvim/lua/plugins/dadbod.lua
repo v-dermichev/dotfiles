@@ -200,7 +200,43 @@ return {
                 or vim.fn.glob(base .. "/*/" .. label .. ".sql", false, true)[1]
             end
             if not path then
+              -- Not a saved-query file (table helper / toggle line). Compose
+              -- SelectLine + ExecuteQuery, then deterministically restore:
+              -- the editor window gets its exact previous buffer back, or the
+              -- transient split is closed if no editor existed before.
+              local drawer_win = vim.api.nvim_get_current_win()
+              local editor_win, editor_buf
+              for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+                local b = vim.api.nvim_win_get_buf(w)
+                if vim.api.nvim_win_get_config(w).relative == "" and vim.bo[b].buftype == ""
+                    and vim.bo[b].filetype ~= "dbui" then
+                  editor_win, editor_buf = w, b
+                  break
+                end
+              end
               vim.cmd([[execute "normal \<Plug>(DBUI_SelectLine)"]])
+              local qwin = vim.api.nvim_get_current_win()
+              local qbuf = vim.api.nvim_get_current_buf()
+              local qft = vim.bo[qbuf].filetype
+              if qwin == drawer_win or not (qft == "sql" or qft == "mysql" or qft == "plsql") then
+                return -- plain toggle/expand: nothing opened
+              end
+              vim.cmd([[execute "normal \<Plug>(DBUI_ExecuteQuery)"]])
+              if vim.api.nvim_win_is_valid(drawer_win) then
+                vim.api.nvim_set_current_win(drawer_win)
+              end
+              vim.schedule(function()
+                if editor_win and vim.api.nvim_win_is_valid(editor_win)
+                    and editor_buf and vim.api.nvim_buf_is_valid(editor_buf) then
+                  pcall(vim.api.nvim_win_set_buf, editor_win, editor_buf)
+                elseif not editor_win and vim.api.nvim_win_is_valid(qwin) then
+                  pcall(vim.api.nvim_win_close, qwin, false)
+                end
+                if vim.api.nvim_buf_is_valid(qbuf) then
+                  pcall(vim.api.nvim_buf_delete, qbuf, { force = true })
+                end
+                require("config.layout").apply()
+              end)
               return
             end
             local slug = vim.fn.fnamemodify(path, ":h:t")
