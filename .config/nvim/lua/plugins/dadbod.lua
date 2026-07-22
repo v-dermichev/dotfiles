@@ -12,7 +12,11 @@ return {
     -- Patch out the two `redraw!` calls (drawer render + connect): a bang
     -- redraw clears and repaints the whole screen, visibly blinking every
     -- pane on each drawer toggle. They only serve to clear echo messages.
-    -- Runs as a build step so the patch reapplies after plugin updates.
+    --
+    -- Upstream stays updatable: lazy's plain `git checkout` refuses dirty
+    -- trees, so the LazyUpdatePre/RestorePre hooks below restore pristine
+    -- files first, and the post hooks re-apply the (idempotent) sed. The
+    -- build step covers fresh installs.
     build = [[sh -c "sed -i 's/^\s*redraw!$/  \" redraw! patched out: full-screen repaint blinks every pane/' autoload/db_ui/drawer.vim autoload/db_ui.vim"]],
     dependencies = {
       { "tpope/vim-dadbod", lazy = true },
@@ -65,6 +69,31 @@ return {
       vim.g.db_ui_execute_on_save = 1
 
       local group = vim.api.nvim_create_augroup("DadbodPipeline", { clear = true })
+
+      -- Source-patch lifecycle (see the build comment above): pristine before
+      -- git operations, re-patched after — keeps upstream updates flowing.
+      local dadbod_ui_dir = vim.fn.stdpath("data") .. "/lazy/vim-dadbod-ui"
+      local function dadbod_ui_pristine()
+        vim.system({ "git", "-C", dadbod_ui_dir, "checkout", "--", "autoload/" }):wait()
+      end
+      local function dadbod_ui_patch()
+        vim.system({ "sh", "-c",
+          "cd " .. vim.fn.shellescape(dadbod_ui_dir) ..
+          [[ && sed -i 's/^\s*redraw!$/  " redraw! patched out: full-screen repaint blinks every pane/' autoload/db_ui/drawer.vim autoload/db_ui.vim]]
+        }):wait()
+      end
+      vim.api.nvim_create_autocmd("User", {
+        group = group,
+        pattern = { "LazyUpdatePre", "LazyRestorePre", "LazySyncPre" },
+        callback = dadbod_ui_pristine,
+      })
+      vim.api.nvim_create_autocmd("User", {
+        group = group,
+        -- post events; sed is a no-op when already patched, so this also
+        -- covers "update fetched nothing" where build does not re-run
+        pattern = { "LazyUpdate", "LazyRestore", "LazySync" },
+        callback = dadbod_ui_patch,
+      })
 
       -- Project-scoped connections without a dotenv plugin: dadbod-ui only
       -- reads DB_UI_* from the process environment, so a project .env file is
