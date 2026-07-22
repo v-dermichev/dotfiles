@@ -70,21 +70,57 @@ return {
         return url
       end
 
+      -- ADO.NET-style connection strings ("Server=..;Port=..;Database=..;
+      -- Uid=..;Pwd=..", the .NET convention) converted to the url dadbod
+      -- expects. Returns nil when the value doesn't look like one.
+      local function ado_to_url(s)
+        if s:match("^[%w+]+://") or not s:find("=") then return nil end
+        local kv = {}
+        for pair in s:gmatch("[^;]+") do
+          local k, v = pair:match("^%s*([%w%s]-)%s*=%s*(.-)%s*$")
+          if k and k ~= "" then kv[k:lower():gsub("%s+", " ")] = v end
+        end
+        local host = kv["server"] or kv["host"] or kv["data source"]
+        if not host then return nil end
+        local user = kv["uid"] or kv["user id"] or kv["username"] or kv["user"]
+        local pass = kv["pwd"] or kv["password"]
+        local port = kv["port"]
+        local db = kv["database"] or kv["initial catalog"]
+        -- scheme heuristics: default mysql (this machine's stack); well-known
+        -- ports / windows-auth keys override
+        local scheme = "mysql"
+        if port == "5432" then
+          scheme = "postgresql"
+        elseif port == "1433" or kv["trusted_connection"] or kv["integrated security"] then
+          scheme = "sqlserver"
+        end
+        local function enc(x)
+          return (x:gsub("[^%w%-%._~]", function(c) return ("%%%02X"):format(c:byte()) end))
+        end
+        local auth = user and (enc(user) .. (pass and ":" .. enc(pass) or "") .. "@") or ""
+        return scheme .. "://" .. auth .. host .. (port and ":" .. port or "") .. "/" .. (db or "")
+      end
+
       local function load_project_dbs()
         local dbs = {}
         for _, envname in ipairs({ ".env", ".env.local" }) do
           local ok, env_lines = pcall(vim.fn.readfile, vim.uv.cwd() .. "/" .. envname)
           if ok then
             for _, l in ipairs(env_lines) do
-              local name, url = l:match("^%s*e?x?p?o?r?t?%s*DB_UI_([%w_]+)%s*=%s*(.-)%s*$")
-              if not name then
-                -- the app's own connection var doubles as a dev connection;
-                -- name it after the database in the url path
-                url = l:match("^%s*e?x?p?o?r?t?%s*DATABASE_URL%s*=%s*(.-)%s*$")
-                if url then name = url:match("/([%w_%-]+)%??[^/]*$") or "env" end
+              local name, raw = l:match("^%s*e?x?p?o?r?t?%s*DB_UI_([%w_]+)%s*=%s*(.-)%s*$")
+              if not raw then
+                raw = l:match("^%s*e?x?p?o?r?t?%s*DATABASE_URL%s*=%s*(.-)%s*$")
               end
-              if name and url and url ~= "" then
-                table.insert(dbs, { name = name:lower(), url = normalize_url(url) })
+              if raw and raw ~= "" then
+                local url = raw:gsub('^"(.*)"$', "%1"):gsub("^'(.*)'$", "%1")
+                url = ado_to_url(url) or url
+                url = normalize_url(url)
+                if not name then
+                  -- the app's own connection var doubles as a dev connection;
+                  -- name it after the database in the url path
+                  name = url:match("://[^/]+/([%w_%-]+)") or "env"
+                end
+                table.insert(dbs, { name = name:lower(), url = url })
               end
             end
           end
