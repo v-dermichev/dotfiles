@@ -249,9 +249,35 @@ local function refresh_csproj_buf(proj)
   end
 end
 
+-- ---------------------------------------------------------------------------
+-- statusline reporting (consumed by lualine via M.statusline())
+-- ---------------------------------------------------------------------------
+local status_text = nil
+local status_gen = 0 -- invalidates delayed clears when a new op starts
+
+local function set_status(txt, clear_after_ms)
+  status_text = txt
+  status_gen = status_gen + 1
+  local gen = status_gen
+  vim.schedule(function() pcall(vim.cmd.redrawstatus) end)
+  if clear_after_ms then
+    vim.defer_fn(function()
+      if status_gen == gen then
+        status_text = nil
+        pcall(vim.cmd.redrawstatus)
+      end
+    end, clear_after_ms)
+  end
+end
+
+function M.statusline()
+  return status_text or ""
+end
+
 -- run a dotnet package operation against proj (resolved when nil);
--- on_done() fires after completion either way (used to sequence batches)
-local function dotnet_op(op, package_id, version, proj, on_done)
+-- on_done() fires after completion either way (used to sequence batches);
+-- progress ("2/5") prefixes the statusline text for batches
+local function dotnet_op(op, package_id, version, proj, on_done, progress)
   local function run(p)
     if not p then
       if on_done then on_done() end
@@ -261,13 +287,14 @@ local function dotnet_op(op, package_id, version, proj, on_done)
     if version then vim.list_extend(cmd, { "--version", version }) end
     local pretty = package_id .. (version and ("@" .. version) or "")
     local verb = op == "remove" and "removing" or "adding"
-    vim.notify("NuGet: " .. verb .. " " .. pretty .. " → " .. vim.fn.fnamemodify(p, ":t") .. " …")
+    local prefix = progress and ("[" .. progress .. "] ") or ""
+    set_status(("󰏗 %s%s %s → %s"):format(prefix, verb, pretty, vim.fn.fnamemodify(p, ":t")))
     vim.system(cmd, { text = true }, vim.schedule_wrap(function(out)
       if out.code == 0 then
-        vim.notify("NuGet: " .. (op == "remove" and "removed " or "installed ") .. pretty,
-          vim.log.levels.INFO)
+        set_status(("✓ %s%s %s"):format(prefix, op == "remove" and "removed" or "installed", pretty), 4000)
         refresh_csproj_buf(p)
       else
+        set_status("✗ dotnet " .. op .. " failed: " .. pretty, 6000)
         vim.notify("NuGet: dotnet " .. op .. " failed for " .. pretty .. "\n" ..
           (out.stderr ~= "" and out.stderr or out.stdout), vim.log.levels.ERROR)
       end
@@ -294,7 +321,8 @@ local function batch_op(op, ids, proj)
   local function step()
     i = i + 1
     if not ids[i] then return end
-    dotnet_op(op, ids[i], nil, proj, step)
+    local progress = #ids > 1 and (i .. "/" .. #ids) or nil
+    dotnet_op(op, ids[i], nil, proj, step, progress)
   end
   -- resolve the project once for the whole batch
   if proj or #ids == 0 then
