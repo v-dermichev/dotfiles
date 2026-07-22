@@ -62,18 +62,6 @@ return {
           if slot_win and vim.api.nvim_win_is_valid(slot_win) then
             pcall(vim.api.nvim_win_set_height, slot_win, slot_h)
           end
-          -- Pin a 50/50 column split LAST: any earlier height write (incl.
-          -- the slot restore above) redistributes the column and can crush
-          -- the tree to a statusline sliver.
-          if not drawer and tree and vim.api.nvim_win_is_valid(tree) then
-            for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-              if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == "dbui" then
-                local total = vim.api.nvim_win_get_height(tree) + vim.api.nvim_win_get_height(w)
-                pcall(vim.api.nvim_win_set_height, w, math.floor(total / 2))
-                break
-              end
-            end
-          end
         end,
         desc = "DB: toggle query UI",
       },
