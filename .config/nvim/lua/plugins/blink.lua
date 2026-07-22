@@ -39,9 +39,19 @@ return {
           return { 'easy_dotnet', 'lsp', 'path' }
         end
 
+        local ft = vim.bo.filetype
+        if ft == 'sql' or ft == 'mysql' or ft == 'plsql' then
+          -- dadbod: schema-aware completion against the connected database
+          return { 'dadbod', 'lsp', 'snippets', 'buffer' }
+        end
+
         return { 'lsp', 'path', 'snippets', 'buffer' }
       end,
       providers = {
+        dadbod = {
+          name = 'Dadbod',
+          module = 'vim_dadbod_completion.blink',
+        },
         easy_dotnet = {
           name = 'easy-dotnet',
           module = 'easy-dotnet.completion.blink',
