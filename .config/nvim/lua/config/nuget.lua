@@ -249,10 +249,14 @@ local function refresh_csproj_buf(proj)
   end
 end
 
--- run a dotnet package operation against proj (resolved when nil)
-local function dotnet_op(op, package_id, version, proj)
+-- run a dotnet package operation against proj (resolved when nil);
+-- on_done() fires after completion either way (used to sequence batches)
+local function dotnet_op(op, package_id, version, proj, on_done)
   local function run(p)
-    if not p then return end
+    if not p then
+      if on_done then on_done() end
+      return
+    end
     local cmd = { "dotnet", op, p, "package", package_id }
     if version then vim.list_extend(cmd, { "--version", version }) end
     local pretty = package_id .. (version and ("@" .. version) or "")
@@ -267,9 +271,41 @@ local function dotnet_op(op, package_id, version, proj)
         vim.notify("NuGet: dotnet " .. op .. " failed for " .. pretty .. "\n" ..
           (out.stderr ~= "" and out.stderr or out.stdout), vim.log.levels.ERROR)
       end
+      if on_done then on_done() end
     end))
   end
   if proj then run(proj) else resolve_csproj(run) end
+end
+
+-- ids from every selected row (fzf --multi hands all marked entries)
+local function selected_ids(selected)
+  local ids = {}
+  for _, line in ipairs(selected or {}) do
+    local id = line:match("^([^\t]+)")
+    if id then table.insert(ids, id) end
+  end
+  return ids
+end
+
+-- run one dotnet op per id, strictly sequentially — concurrent dotnet
+-- add/remove runs against the same csproj race on the file rewrite
+local function batch_op(op, ids, proj)
+  local i = 0
+  local function step()
+    i = i + 1
+    if not ids[i] then return end
+    dotnet_op(op, ids[i], nil, proj, step)
+  end
+  -- resolve the project once for the whole batch
+  if proj or #ids == 0 then
+    step()
+  else
+    resolve_csproj(function(p)
+      if not p then return end
+      proj = p
+      step()
+    end)
+  end
 end
 
 local function install(package_id, version, proj)
@@ -351,13 +387,13 @@ function M.remove()
       fzf_opts = {
         ["--delimiter"] = "\t",
         ["--nth"] = "1",
-        ["--header"] = vim.fn.fnamemodify(proj, ":t") .. " │ enter: remove package",
+        ["--multi"] = true,
+        ["--header"] = vim.fn.fnamemodify(proj, ":t") .. " │ tab: mark │ enter: remove",
       },
       winopts = { preview = { horizontal = "right:55%" } },
       actions = {
         ["default"] = function(selected)
-          local id = selected_id(selected)
-          if id then dotnet_op("remove", id, nil, proj) end
+          batch_op("remove", selected_ids(selected), proj)
         end,
       },
     })
@@ -393,13 +429,13 @@ function M.update()
       fzf_opts = {
         ["--delimiter"] = "\t",
         ["--nth"] = "1",
-        ["--header"] = vim.fn.fnamemodify(proj, ":t") .. " │ enter: update to latest",
+        ["--multi"] = true,
+        ["--header"] = vim.fn.fnamemodify(proj, ":t") .. " │ tab: mark │ enter: update to latest",
       },
       winopts = { preview = { horizontal = "right:55%" } },
       actions = {
         ["default"] = function(selected)
-          local id = selected_id(selected)
-          if id then dotnet_op("add", id, nil, proj) end
+          batch_op("add", selected_ids(selected), proj)
         end,
       },
     })
@@ -419,13 +455,13 @@ function M.pick()
     fzf_opts = {
       ["--delimiter"] = "\t",
       ["--nth"] = "1",
-      ["--header"] = "enter: install latest │ ctrl-v: pick version",
+      ["--multi"] = true,
+      ["--header"] = "tab: mark │ enter: install latest │ ctrl-v: pick version",
     },
     winopts = { preview = { horizontal = "right:55%" } },
     actions = {
       ["default"] = function(selected)
-        local id = selected_id(selected)
-        if id then install(id) end
+        batch_op("add", selected_ids(selected), nil)
       end,
       ["ctrl-v"] = function(selected)
         local id = selected_id(selected)
