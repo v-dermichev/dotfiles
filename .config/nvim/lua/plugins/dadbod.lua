@@ -71,6 +71,7 @@ return {
       -- <placeholders>, so the drawer <leader>r opens them for editing
       -- instead of executing (auto_execute stays off by default too).
       local scaffolds = {
+        ["Insert row"] = "INSERT INTO {optional_schema}`{table}` (<columns>) VALUES (<values>);",
         ["Update rows"] = "UPDATE {optional_schema}`{table}` SET <col> = <value> WHERE <condition>;",
         ["Delete rows"] = "DELETE FROM {optional_schema}`{table}` WHERE <condition>;",
       }
@@ -78,6 +79,7 @@ return {
         mysql = scaffolds,
         mariadb = scaffolds,
         sqlite = {
+          ["Insert row"] = 'INSERT INTO "{table}" (<columns>) VALUES (<values>);',
           ["Update rows"] = 'UPDATE "{table}" SET <col> = <value> WHERE <condition>;',
           ["Delete rows"] = 'DELETE FROM "{table}" WHERE <condition>;',
         },

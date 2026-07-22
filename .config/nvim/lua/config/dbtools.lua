@@ -152,8 +152,61 @@ local function identity_where(cols, vals)
   return table.concat(parts, " AND ")
 end
 
+-- Build INSERT from collected values; columns with nil are omitted so
+-- database defaults / auto-increment apply. vals_map[col] == vim.NIL means
+-- an explicit NULL.
+function M.build_insert(tbl, cols, vals_map)
+  local names, values = {}, {}
+  for _, c in ipairs(cols) do
+    local v = vals_map[c]
+    if v ~= nil then
+      table.insert(names, "`" .. c .. "`")
+      if v == vim.NIL then
+        table.insert(values, "NULL")
+      else
+        table.insert(values, sql_value(v) or "NULL")
+      end
+    end
+  end
+  if #names == 0 then return nil end
+  return ("INSERT INTO `%s` (%s) VALUES (%s);"):format(
+    tbl, table.concat(names, ", "), table.concat(values, ", "))
+end
+
+-- Sequentially prompt for each column (prefilled with the source row's
+-- values — clone-and-tweak); empty input skips the column, the literal
+-- string NULL inserts NULL.
+local function insert_flow(url, tbl, cols, vals)
+  local collected = {}
+  local i = 0
+  local function step()
+    i = i + 1
+    if not cols[i] then
+      local sql = M.build_insert(tbl, cols, collected)
+      if not sql then
+        return vim.notify("DB: all columns skipped — nothing to insert", vim.log.levels.WARN)
+      end
+      if vim.fn.confirm(sql, "&Execute\n&Cancel", 1) == 1 then
+        M.exec(url, sql)
+      end
+      return
+    end
+    vim.ui.input({
+      prompt = ("`%s` (%d/%d, empty = skip) = "):format(cols[i], i, #cols),
+      default = vals[i] ~= "NULL" and vals[i] or "",
+    }, function(input)
+      if input == nil then return end -- aborted: cancel whole flow
+      if input ~= "" then
+        collected[cols[i]] = input == "NULL" and vim.NIL or input
+      end
+      step()
+    end)
+  end
+  step()
+end
+
 -- <leader>e in dbout: fzf over the row's columns.
--- enter = update that column, ctrl-x = delete the row.
+-- enter = update that column, ctrl-x = delete the row, ctrl-a = insert (clone).
 function M.row_menu()
   local cols, vals = M.row_under_cursor()
   if not cols then
@@ -182,7 +235,7 @@ function M.row_menu()
     prompt = tbl .. " row> ",
     fzf_opts = {
       ["--delimiter"] = "\t",
-      ["--header"] = "enter: update column │ ctrl-x: delete row",
+      ["--header"] = "enter: update column │ ctrl-x: delete row │ ctrl-a: insert (clone row)",
     },
     actions = {
       ["default"] = function(selected)
@@ -206,6 +259,9 @@ function M.row_menu()
         if vim.fn.confirm(sql, "&Execute\n&Cancel", 2, "Warning") == 1 then
           M.exec(url, sql)
         end
+      end,
+      ["ctrl-a"] = function()
+        insert_flow(url, tbl, cols, vals)
       end,
     },
   })
