@@ -8,7 +8,7 @@ FAIL=0
 run_case() {
   local name="$1" lua="$2"
   local out
-  out=$(timeout 90 nvim --headless +"lua vim.o.lines = 50 vim.defer_fn(function()
+  out=$(timeout 90 nvim --headless +"lua vim.o.lines = 50 vim.o.columns = 200 vim.defer_fn(function()
     local function win_info()
       local s = { }
       for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
@@ -123,6 +123,39 @@ run_case "query-slot-exclusivity" '
         vim.cmd("qa!")
       end, 3500)
     end, 3000)
+  end, 2500)
+'
+
+# ── 5. editor opened while sidebars owned the frame: no half-screen split ──
+run_case "editor-after-sidebar-expansion" '
+  require("config.term_tabs").show(1)
+  vim.defer_fn(function()
+    vim.cmd("Lazy load vim-dadbod-ui")
+    vim.defer_fn(function()
+      -- close every editor so the tree column absorbs the frame
+      for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        local b = vim.api.nvim_win_get_buf(w)
+        if vim.bo[b].buftype == "" then
+          pcall(vim.api.nvim_win_close, w, false)
+        end
+      end
+      vim.fn.maparg(" q", "n", false, true).callback() -- drawer joins the tree column
+      vim.defer_fn(function()
+        -- what dadbod focus_window does when it finds no editor:
+        vim.cmd("vertical botright new")
+        vim.cmd("edit " .. vim.fn.tempname() .. ".txt")
+        vim.defer_fn(function()  -- allow the debounced layout.apply to run
+          local o = win_info()
+          if o.tree and o.tree.w > math.floor(vim.o.columns / 3) then
+            fail("tree still " .. o.tree.w .. " wide (half-screen damage kept)")
+          end
+          if o.editor and o.editor.w < vim.o.columns - 40 then
+            fail("editor only " .. o.editor.w .. " wide")
+          end
+          vim.cmd("qa!")
+        end, 1500)
+      end, 2500)
+    end, 2500)
   end, 2500)
 '
 

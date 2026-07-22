@@ -185,6 +185,12 @@ return {
         group = group,
         pattern = "dbui",
         callback = function(ev)
+          -- Pane jumps like the terminal panes have: within the left column
+          -- (tree above, slot below) and out to the editor.
+          for key, dir in pairs({ ["<C-j>"] = "j", ["<C-k>"] = "k", ["<C-h>"] = "h", ["<C-l>"] = "l" }) do
+            vim.keymap.set("n", key, "<Cmd>wincmd " .. dir .. "<CR>",
+              { buffer = ev.buf, desc = "Window: " .. dir })
+          end
           vim.keymap.set("n", "<leader>r", function()
             local label = vim.api.nvim_get_current_line():match("([%w%._%-]+)%s*$")
             local path
@@ -224,7 +230,7 @@ return {
             local scratch = vim.api.nvim_create_buf(false, true)
             vim.api.nvim_buf_set_lines(scratch, 0, -1, false, vim.fn.readfile(path))
             vim.api.nvim_buf_call(scratch, function()
-              vim.cmd("%DB " .. vim.fn.fnameescape(url))
+              vim.cmd("%DB " .. url) -- raw: fnameescape backslash-escapes ?/= and corrupts the url
             end)
             vim.schedule(function()
               pcall(vim.api.nvim_buf_delete, scratch, { force = true })

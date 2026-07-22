@@ -72,6 +72,19 @@ function M.apply()
       end
     end
 
+    -- Sidebar width sanity: with no editor open, sidebars absorb the whole
+    -- frame; a subsequent editor split then halves the screen and "tree
+    -- width is user-owned" would preserve the damage. A sidebar wider than
+    -- a third of the screen while editors exist is damage, not preference.
+    if #s.editors > 0 then
+      local cap = math.max(math.floor(vim.o.columns / 3), M.dims.sidebar_w + 10)
+      for _, w in ipairs({ s.tree, s.drawer }) do
+        if w and api.nvim_win_get_width(w) > cap then
+          pcall(api.nvim_win_set_width, w, M.dims.sidebar_w)
+        end
+      end
+    end
+
     -- 2) left column: tree above drawer, drawer width follows the tree.
     if s.tree and s.drawer then
       if col(s.tree) ~= col(s.drawer) then
