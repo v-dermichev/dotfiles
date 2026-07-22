@@ -21,6 +21,10 @@ return {
     popup_border_style = "rounded",
     enable_git_status = true,
     enable_diagnostics = true,
+    -- Don't open files into special panes (default covers terminal/trouble/qf;
+    -- dbui/dbout added since the DB drawer docks right below the tree and was
+    -- swallowing file opens).
+    open_files_do_not_replace_types = { "terminal", "trouble", "qf", "dbui", "dbout" },
     window = {
       position = "left",
       width = 32, -- fixed slice of the left side

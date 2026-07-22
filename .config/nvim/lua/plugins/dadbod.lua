@@ -23,28 +23,20 @@ return {
         "<leader>q",
         function()
           -- Share the left column with neo-tree instead of adding a second
-          -- sidebar: split the tree horizontally and dock the drawer below
-          -- it. Runs synchronously in the same tick as DBUIToggle so the
-          -- drawer never paints at its default position first (same
-          -- no-jump pattern as neo-tree's terminal-slot redock); the
-          -- scheduled pass is an idempotent safety net.
-          local function dock_drawer()
-            local drawer, tree
-            for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-              local ft = vim.bo[vim.api.nvim_win_get_buf(w)].filetype
-              if ft == "dbui" then drawer = w end
-              if ft == "neo-tree" then tree = w end
-            end
-            if not (drawer and tree) then return end
-            if vim.api.nvim_win_get_position(drawer)[2] == vim.api.nvim_win_get_position(tree)[2] then
-              return -- already sharing the column
-            end
-            pcall(vim.fn.win_splitmove, drawer, tree, { rightbelow = true })
-            local total = vim.api.nvim_win_get_height(tree) + vim.api.nvim_win_get_height(drawer)
-            pcall(vim.api.nvim_win_set_height, drawer, math.floor(total / 2))
+          -- sidebar. :DBUI passes command modifiers through to the drawer
+          -- window creation, so running `belowright DBUI` from the tree
+          -- window makes the drawer be BORN as a horizontal split below it —
+          -- nothing to move afterwards, so no flicker and no width drift
+          -- (the old splitmove approach leaked width into the tree on every
+          -- toggle and repainted between the default and final positions).
+          local drawer, tree
+          for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+            local ft = vim.bo[vim.api.nvim_win_get_buf(w)].filetype
+            if ft == "dbui" then drawer = w end
+            if ft == "neo-tree" then tree = w end
           end
-          -- Splitting/moving windows equalizes heights and crushes the bottom
-          -- slot; snapshot its height and restore after every layout pass.
+          -- snapshot the bottom slot height: 'equalalways' can rebalance on
+          -- any split/close; restore keeps the terminal/results pane stable
           local slot_win, slot_h
           for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
             local b = vim.api.nvim_win_get_buf(w)
@@ -54,18 +46,17 @@ return {
               break
             end
           end
-          local function restore_slot()
-            if slot_win and vim.api.nvim_win_is_valid(slot_win) then
-              pcall(vim.api.nvim_win_set_height, slot_win, slot_h)
-            end
+          if drawer then
+            vim.cmd("DBUIClose")
+          elseif tree then
+            vim.api.nvim_set_current_win(tree)
+            vim.cmd("belowright DBUI")
+          else
+            vim.cmd("DBUI")
           end
-          vim.cmd("DBUIToggle")
-          dock_drawer()
-          restore_slot()
-          vim.schedule(function()
-            dock_drawer()
-            restore_slot()
-          end)
+          if slot_win and vim.api.nvim_win_is_valid(slot_win) then
+            pcall(vim.api.nvim_win_set_height, slot_win, slot_h)
+          end
         end,
         desc = "DB: toggle query UI",
       },
