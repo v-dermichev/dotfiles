@@ -89,7 +89,11 @@ end
 
 function M.pick()
   local fzf = require("fzf-lua")
-  fzf.fzf_live(function(query) return search_cmd(query) end, {
+  -- fzf-lua hands the live contents fn its args as a list: args[1] = query
+  fzf.fzf_live(function(args)
+    local query = type(args) == "table" and args[1] or args
+    return search_cmd(query)
+  end, {
     prompt = "NuGet> ",
     exec_empty_query = false,
     fzf_opts = {
