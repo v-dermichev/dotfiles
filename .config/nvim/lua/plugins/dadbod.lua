@@ -67,6 +67,21 @@ return {
       -- :w in a query buffer executes it (the core query→output loop);
       -- <leader>r below does the same without writing.
       vim.g.db_ui_execute_on_save = 1
+      -- Update/Delete scaffolds in each table's helper list. They contain
+      -- <placeholders>, so the drawer <leader>r opens them for editing
+      -- instead of executing (auto_execute stays off by default too).
+      local scaffolds = {
+        ["Update rows"] = "UPDATE {optional_schema}`{table}` SET <col> = <value> WHERE <condition>;",
+        ["Delete rows"] = "DELETE FROM {optional_schema}`{table}` WHERE <condition>;",
+      }
+      vim.g.db_ui_table_helpers = {
+        mysql = scaffolds,
+        mariadb = scaffolds,
+        sqlite = {
+          ["Update rows"] = 'UPDATE "{table}" SET <col> = <value> WHERE <condition>;',
+          ["Delete rows"] = 'DELETE FROM "{table}" WHERE <condition>;',
+        },
+      }
 
       local group = vim.api.nvim_create_augroup("DadbodPipeline", { clear = true })
 
@@ -287,6 +302,11 @@ return {
                 local scheme = url:match("^([%w]+):")
                 local okh, helpers = pcall(vim.fn["db_ui#table_helpers#get"], scheme)
                 if okh and type(helpers) == "table" then template = helpers[helper_label] end
+                -- scaffolds carry <placeholders>: open for editing, never run
+                if template and template:find("<", 1, true) then
+                  vim.cmd([[execute "normal \<Plug>(DBUI_SelectLine)"]])
+                  return
+                end
               end
               if template then
                 local dbname = url:match("://[^/]+/([^?/]+)") or ""
@@ -296,15 +316,9 @@ return {
                   :gsub("{schema}", dbname)
                   :gsub("{dbname}", dbname)
                   :gsub("{last_query}", "")
-                local scratch = vim.api.nvim_create_buf(false, true)
-                vim.api.nvim_buf_set_lines(scratch, 0, -1, false, vim.split(sql, "\n"))
-                vim.api.nvim_buf_call(scratch, function()
-                  vim.cmd("%DB " .. url)
-                end)
-                vim.schedule(function()
-                  pcall(vim.api.nvim_buf_delete, scratch, { force = true })
-                end)
-                require("config.layout").sync()
+                local dbtools = require("config.dbtools")
+                dbtools.exec(url, sql)
+                dbtools.set_last({ url = url, sql = sql, table = tbl })
                 return
               end
             end
@@ -373,15 +387,8 @@ return {
               vim.notify("DB: no connection found for " .. slug, vim.log.levels.WARN)
               return
             end
-            local scratch = vim.api.nvim_create_buf(false, true)
-            vim.api.nvim_buf_set_lines(scratch, 0, -1, false, vim.fn.readfile(path))
-            vim.api.nvim_buf_call(scratch, function()
-              vim.cmd("%DB " .. url) -- raw: fnameescape backslash-escapes ?/= and corrupts the url
-            end)
-            vim.schedule(function()
-              pcall(vim.api.nvim_buf_delete, scratch, { force = true })
-            end)
-            require("config.layout").sync()
+            require("config.dbtools").confirm_exec(url,
+              table.concat(vim.fn.readfile(path), "\n"))
           end, { buffer = ev.buf, desc = "DB: run query under cursor (no editor)" })
         end,
       })
@@ -392,10 +399,59 @@ return {
         group = group,
         pattern = { "sql", "mysql", "plsql" },
         callback = function(ev)
-          vim.keymap.set("n", "<leader>r", "<Plug>(DBUI_ExecuteQuery)",
-            { buffer = ev.buf, desc = "DB: execute query" })
-          vim.keymap.set("v", "<leader>r", "<Plug>(DBUI_ExecuteQuery)",
-            { buffer = ev.buf, desc = "DB: execute selection" })
+          local function guarded_execute(get_sql)
+            return function()
+              local dbtools = require("config.dbtools")
+              local sql = get_sql()
+              local danger = dbtools.dangerous(sql)
+              if danger and vim.fn.confirm(
+                    "Statement without WHERE:\n\n" .. danger .. "\n\nExecute anyway?",
+                    "&Execute\n&Cancel", 2, "Warning") ~= 1 then
+                vim.notify("DB: cancelled", vim.log.levels.INFO)
+                return
+              end
+              -- record for result-row operations
+              local key = vim.b[ev.buf].dbui_db_key_name
+              local okc, conn = pcall(vim.fn["db_ui#get_conn_info"], key)
+              dbtools.set_last({
+                url = okc and conn.url or nil,
+                sql = sql,
+                table = dbtools.table_of(sql),
+              })
+              vim.cmd([[execute "normal \<Plug>(DBUI_ExecuteQuery)"]])
+            end
+          end
+          vim.keymap.set("n", "<leader>r", guarded_execute(function()
+            return table.concat(vim.api.nvim_buf_get_lines(ev.buf, 0, -1, false), "\n")
+          end), { buffer = ev.buf, desc = "DB: execute query" })
+          vim.keymap.set("v", "<leader>r", guarded_execute(function()
+            local s0 = vim.fn.line("v")
+            local e0 = vim.fn.line(".")
+            if s0 > e0 then s0, e0 = e0, s0 end
+            return table.concat(vim.api.nvim_buf_get_lines(ev.buf, s0 - 1, e0, false), "\n")
+          end), { buffer = ev.buf, desc = "DB: execute selection" })
+          -- :w executes too (db_ui_execute_on_save); guard that path as well
+          vim.api.nvim_create_autocmd("BufWritePre", {
+            group = group,
+            buffer = ev.buf,
+            callback = function()
+              local dbtools = require("config.dbtools")
+              local sql = table.concat(vim.api.nvim_buf_get_lines(ev.buf, 0, -1, false), "\n")
+              local danger = dbtools.dangerous(sql)
+              if danger and vim.fn.confirm(
+                    "Statement without WHERE:\n\n" .. danger .. "\n\nExecute anyway?",
+                    "&Execute\n&Cancel", 2, "Warning") ~= 1 then
+                error("DB: write/execute cancelled")
+              end
+              local key = vim.b[ev.buf].dbui_db_key_name
+              local okc, conn = pcall(vim.fn["db_ui#get_conn_info"], key)
+              dbtools.set_last({
+                url = okc and conn.url or nil,
+                sql = sql,
+                table = dbtools.table_of(sql),
+              })
+            end,
+          })
         end,
       })
 
@@ -409,6 +465,10 @@ return {
         group = group,
         pattern = "dbout",
         callback = function(ev)
+          -- fzf row operations: enter = update a column, ctrl-x = delete row
+          vim.keymap.set("n", "<leader>e", function()
+            require("config.dbtools").row_menu()
+          end, { buffer = ev.buf, desc = "DB: edit/delete result row" })
           -- Synchronous in the FileType tick so the results pane never
           -- flashes at the query-window split before jumping to the slot;
           -- the scheduled pass is an idempotent safety net for any path
