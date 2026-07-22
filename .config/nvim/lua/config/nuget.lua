@@ -190,6 +190,9 @@ local function make_previewer()
 
   function P:new(o, opts, fzf_win)
     P.super.new(self, o, opts, fzf_win)
+    -- fzf-lua deep-extends opts, which strips this table's metatable; restore
+    -- it so the base class methods (get_tmp_buffer & co) resolve again.
+    setmetatable(self, P)
     return self
   end
 
