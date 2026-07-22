@@ -199,8 +199,89 @@ return {
               path = vim.fn.glob(base .. "/*/" .. label, false, true)[1]
                 or vim.fn.glob(base .. "/*/" .. label .. ".sql", false, true)[1]
             end
+            -- Helper lines (List/Columns/…): resolve template + table +
+            -- connection from drawer text and the PUBLIC template API, then
+            -- execute bufferless — zero focus changes (Neovide renders any
+            -- cursor flight immediately, same-tick or not).
             if not path then
-              -- Not a saved-query file (table helper / toggle line). Compose
+              local function label_of(text)
+                local t = text:gsub("^%s*", "")
+                -- drawer lines carry several glyph prefixes (expander + icon)
+                while true do
+                  local first, rest = t:match("^(%S+)%s+(.*)$")
+                  if first and rest and not first:match("^[%w]") then t = rest else break end
+                end
+                return t
+              end
+              local function indent_of(text) return #(text:match("^%s*")) end
+              local lnum = vim.api.nvim_win_get_cursor(0)[1]
+              local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+              local helper_label = label_of(lines[lnum])
+              local helper_indent = indent_of(lines[lnum])
+              -- nearest ancestor with smaller indent = table; indent-1 chain up to connection
+              local tbl, conn
+              local cur_indent = helper_indent
+              for i = lnum - 1, 1, -1 do
+                local ind = indent_of(lines[i])
+                if ind < cur_indent then
+                  local lab = label_of(lines[i])
+                  if not tbl then
+                    tbl = lab
+                  end
+                  cur_indent = ind
+                  if ind == 0 then conn = lab break end
+                end
+              end
+              local url
+              if conn then
+                local function try(name, u)
+                  if not url and vim.fn["db_ui#utils#slug"](name) == vim.fn["db_ui#utils#slug"](conn) then url = u end
+                end
+                local dbs = vim.g.dbs or {}
+                if dbs[1] then
+                  for _, d in ipairs(dbs) do try(d.name, d.url) end
+                else
+                  for n, u in pairs(dbs) do try(n, u) end
+                end
+                if not url then
+                  local okj, conns = pcall(function()
+                    return vim.json.decode(table.concat(
+                      vim.fn.readfile(vim.g.db_ui_save_location .. "/connections.json"), "\n"))
+                  end)
+                  if okj then
+                    for _, c in ipairs(conns or {}) do try(c.name, c.url) end
+                  end
+                end
+              end
+              local template
+              if url and tbl and helper_label then
+                local scheme = url:match("^([%w]+):")
+                local okh, helpers = pcall(vim.fn["db_ui#table_helpers#get"], scheme)
+                if okh and type(helpers) == "table" then template = helpers[helper_label] end
+              end
+              if template then
+                local dbname = url:match("://[^/]+/([^?/]+)") or ""
+                local sql = template
+                  :gsub("{table}", tbl)
+                  :gsub("{optional_schema}", "")
+                  :gsub("{schema}", dbname)
+                  :gsub("{dbname}", dbname)
+                  :gsub("{last_query}", "")
+                local scratch = vim.api.nvim_create_buf(false, true)
+                vim.api.nvim_buf_set_lines(scratch, 0, -1, false, vim.split(sql, "\n"))
+                vim.api.nvim_buf_call(scratch, function()
+                  vim.cmd("%DB " .. url)
+                end)
+                vim.schedule(function()
+                  pcall(vim.api.nvim_buf_delete, scratch, { force = true })
+                end)
+                require("config.layout").sync()
+                return
+              end
+            end
+
+            if not path then
+              -- Not a saved-query file or resolvable helper. Compose
               -- SelectLine + ExecuteQuery, then deterministically restore:
               -- the editor window gets its exact previous buffer back, or the
               -- transient split is closed if no editor existed before.
