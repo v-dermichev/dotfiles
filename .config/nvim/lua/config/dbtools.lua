@@ -129,6 +129,40 @@ function M.row_under_cursor()
   return nil
 end
 
+-- every data row of the result buffer: { cols = {...}, rows = { {display, vals}, ... } }
+function M.all_rows(bufnr)
+  local lines = vim.api.nvim_buf_get_lines(bufnr or 0, 0, -1, false)
+  if not lines[1] then return nil end
+
+  local cols, rows = nil, {}
+  if lines[1]:match("^%s*[+|]") then -- mariadb/mysql -t
+    local header
+    for _, l in ipairs(lines) do
+      if l:match("^%s*|") then
+        if not header then
+          header = l
+          cols = select(1, parse_pipe_row(l, l))
+        else
+          local c, v = parse_pipe_row(header, l)
+          if c then table.insert(rows, { display = l, vals = v }) end
+        end
+      end
+    end
+  elseif lines[2] and lines[2]:match("^%-[%- ]*$") then -- sqlite column mode
+    for i = 3, #lines do
+      if lines[i] ~= "" then
+        local c, v = parse_column_row(lines[1], lines[2], lines[i])
+        if c then
+          cols = cols or c
+          table.insert(rows, { display = lines[i], vals = v })
+        end
+      end
+    end
+  end
+  if not cols or #rows == 0 then return nil end
+  return cols, rows
+end
+
 -- ---------------------------------------------------------------------------
 -- row operations (fzf-lua)
 -- ---------------------------------------------------------------------------
@@ -205,12 +239,13 @@ local function insert_flow(url, tbl, cols, vals)
   step()
 end
 
--- <leader>e in dbout: fzf over the row's columns.
--- enter = update that column, ctrl-x = delete the row, ctrl-a = insert (clone).
+-- <leader>e in dbout: fzf over the RESULT ROWS (multi-select with tab).
+-- enter = update one column across the selected rows, ctrl-x = delete the
+-- selected rows, ctrl-a = insert (clone of the first selected row).
 function M.row_menu()
-  local cols, vals = M.row_under_cursor()
+  local cols, rows = M.all_rows(0)
   if not cols then
-    return vim.notify("DB: no result row under cursor", vim.log.levels.WARN)
+    return vim.notify("DB: no parseable result rows in this buffer", vim.log.levels.WARN)
   end
   local last = M.last or {}
   local url, tbl = last.url, last.table
@@ -221,47 +256,86 @@ function M.row_menu()
     tbl = vim.fn.input("Table name: ")
     if tbl == "" then return end
   end
-  -- sqlite quoting: backticks are mysql-ish; sqlite accepts them too, but
-  -- DELETE ... LIMIT is mysql-only
   local is_mysql = url:match("^mysql") or url:match("^mariadb")
-  local where = identity_where(cols, vals)
   local limit = is_mysql and " LIMIT 1" or ""
 
+  -- display line -> parsed vals (identical rows share identity anyway)
+  local by_display = {}
   local entries = {}
-  for i, c in ipairs(cols) do
-    table.insert(entries, ("%s\t%s"):format(c, vals[i]))
+  for _, r in ipairs(rows) do
+    by_display[vim.trim(r.display)] = r.vals
+    table.insert(entries, r.display)
   end
+  local function selected_rows(selected)
+    local out = {}
+    for _, line in ipairs(selected or {}) do
+      local v = by_display[vim.trim(line)]
+      if v then table.insert(out, v) end
+    end
+    return out
+  end
+
   require("fzf-lua").fzf_exec(entries, {
-    prompt = tbl .. " row> ",
+    prompt = tbl .. " rows> ",
     fzf_opts = {
-      ["--delimiter"] = "\t",
-      ["--header"] = "enter: update column │ ctrl-x: delete row │ ctrl-a: insert (clone row)",
+      ["--multi"] = true,
+      ["--header"] = table.concat(cols, " │ ")
+        .. "  ▏tab: mark │ enter: update column │ ctrl-x: delete │ ctrl-a: insert clone",
     },
     actions = {
       ["default"] = function(selected)
-        local col = selected[1] and selected[1]:match("^([^\t]+)")
-        if not col then return end
-        local current
+        local picked = selected_rows(selected)
+        if #picked == 0 then return end
+        -- second stage: which column to set (values of the first picked row shown)
+        local col_entries = {}
         for i, c in ipairs(cols) do
-          if c == col then current = vals[i] end
+          table.insert(col_entries, ("%s\t%s"):format(c, picked[1][i]))
         end
-        vim.ui.input({ prompt = "SET `" .. col .. "` = ", default = current }, function(newval)
-          if newval == nil then return end
-          local v = sql_value(newval) or "NULL"
-          local sql = ("UPDATE `%s` SET `%s` = %s WHERE %s%s;"):format(tbl, col, v, where, limit)
-          if vim.fn.confirm(sql, "&Execute\n&Cancel", 1) == 1 then
-            M.exec(url, sql)
-          end
-        end)
+        require("fzf-lua").fzf_exec(col_entries, {
+          prompt = tbl .. " set> ",
+          fzf_opts = { ["--delimiter"] = "\t", ["--header"] = "column to update for " .. #picked .. " row(s)" },
+          actions = {
+            ["default"] = function(csel)
+              local col = csel[1] and csel[1]:match("^([^\t]+)")
+              if not col then return end
+              local ci
+              for i, c in ipairs(cols) do
+                if c == col then ci = i end
+              end
+              vim.ui.input({ prompt = "SET `" .. col .. "` = ", default = picked[1][ci] }, function(newval)
+                if newval == nil then return end
+                local v = newval == "NULL" and "NULL" or (sql_value(newval) or "NULL")
+                local stmts = {}
+                for _, vals in ipairs(picked) do
+                  table.insert(stmts, ("UPDATE `%s` SET `%s` = %s WHERE %s%s;")
+                    :format(tbl, col, v, identity_where(cols, vals), limit))
+                end
+                local sql = table.concat(stmts, "\n")
+                if vim.fn.confirm(sql, "&Execute\n&Cancel", 1) == 1 then
+                  M.exec(url, sql)
+                end
+              end)
+            end,
+          },
+        })
       end,
-      ["ctrl-x"] = function()
-        local sql = ("DELETE FROM `%s` WHERE %s%s;"):format(tbl, where, limit)
+      ["ctrl-x"] = function(selected)
+        local picked = selected_rows(selected)
+        if #picked == 0 then return end
+        local stmts = {}
+        for _, vals in ipairs(picked) do
+          table.insert(stmts, ("DELETE FROM `%s` WHERE %s%s;")
+            :format(tbl, identity_where(cols, vals), limit))
+        end
+        local sql = table.concat(stmts, "\n")
         if vim.fn.confirm(sql, "&Execute\n&Cancel", 2, "Warning") == 1 then
           M.exec(url, sql)
         end
       end,
-      ["ctrl-a"] = function()
-        insert_flow(url, tbl, cols, vals)
+      ["ctrl-a"] = function(selected)
+        local picked = selected_rows(selected)
+        if #picked == 0 then return end
+        insert_flow(url, tbl, cols, picked[1])
       end,
     },
   })
