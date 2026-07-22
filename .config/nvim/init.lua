@@ -20,10 +20,14 @@ vim.filetype.add({
 vim.api.nvim_create_autocmd("BufWinEnter", {
   group = vim.api.nvim_create_augroup("DetectBufloadedFiletype", { clear = true }),
   callback = function(ev)
-    if vim.bo[ev.buf].buftype == "" and vim.bo[ev.buf].filetype == ""
-        and vim.api.nvim_buf_get_name(ev.buf) ~= "" then
-      vim.api.nvim_buf_call(ev.buf, function() vim.cmd("filetype detect") end)
-    end
+    if vim.bo[ev.buf].buftype ~= "" or vim.bo[ev.buf].filetype ~= "" then return end
+    -- floats (harpoon menu & co) and non-file buffers (dbui drawer): plugin
+    -- scratch space mid-setup — detecting there causes a visible redraw
+    -- (buf_call spins up a hidden window) on every menu open
+    if vim.api.nvim_win_get_config(0).relative ~= "" then return end
+    local name = vim.api.nvim_buf_get_name(ev.buf)
+    if name == "" or vim.fn.filereadable(name) == 0 then return end
+    vim.api.nvim_buf_call(ev.buf, function() vim.cmd("filetype detect") end)
   end,
 })
 

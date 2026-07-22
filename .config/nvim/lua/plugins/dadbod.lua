@@ -9,6 +9,11 @@
 return {
   {
     "kristijanhusak/vim-dadbod-ui",
+    -- Patch out the two `redraw!` calls (drawer render + connect): a bang
+    -- redraw clears and repaints the whole screen, visibly blinking every
+    -- pane on each drawer toggle. They only serve to clear echo messages.
+    -- Runs as a build step so the patch reapplies after plugin updates.
+    build = [[sh -c "sed -i 's/^\s*redraw!$/  \" redraw! patched out: full-screen repaint blinks every pane/' autoload/db_ui/drawer.vim autoload/db_ui.vim"]],
     dependencies = {
       { "tpope/vim-dadbod", lazy = true },
       {
