@@ -410,17 +410,29 @@ function M.update()
         vim.fn.fnamemodify(proj, ":t"), vim.log.levels.WARN)
     end
     require("fzf-lua").fzf_exec(function(fzf_cb)
-      local remaining = #pkgs
+      -- collect all rows first so outdated packages sort above up-to-date ones
+      local rows, remaining = {}, #pkgs
       for _, p in ipairs(pkgs) do
         fetch(FLAT .. "/" .. p.id:lower() .. "/index.json", function(flat)
           local latest
           for _, v in ipairs(flat and flat.versions or {}) do
             if not v:find("-", 1, true) then latest = v end
           end
-          local mark = (latest and latest ~= p.version) and "↑ " .. latest or "up-to-date"
-          fzf_cb(("%s\t%s\t%s"):format(p.id, p.version, mark))
+          local outdated = latest ~= nil and latest ~= p.version
+          table.insert(rows, {
+            outdated = outdated,
+            line = ("%s\t%s\t%s"):format(p.id, p.version,
+              outdated and "↑ " .. latest or "up-to-date"),
+          })
           remaining = remaining - 1
-          if remaining == 0 then fzf_cb() end
+          if remaining == 0 then
+            table.sort(rows, function(a, b)
+              if a.outdated ~= b.outdated then return a.outdated end
+              return a.line < b.line
+            end)
+            for _, r in ipairs(rows) do fzf_cb(r.line) end
+            fzf_cb()
+          end
         end)
       end
     end, {
