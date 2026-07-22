@@ -110,6 +110,15 @@ local function apply_term_local_maps(buf)
   if buf == nil or buf == 0 then buf = vim.api.nvim_get_current_buf() end
   local o = { buffer = buf }
   vim.keymap.set("t", "<esc>", [[<C-\><C-n>]], vim.tbl_extend("force", o, { desc = "Terminal: to normal mode" }))
+  -- Leader chords from terminal-insert mode: <C-Space> leaves terminal mode and
+  -- feeds <leader>, so e.g. <C-Space>T2 / <C-Space>ff work while typing in the
+  -- shell. (A bare t-mode <Space> map is not an option: every literal space
+  -- would stall by timeoutlen — fatal in lazygit where space = stage.)
+  -- <C-@> is the NUL byte most terminals send for Ctrl+Space.
+  for _, lhs in ipairs({ "<C-Space>", "<C-@>" }) do
+    vim.keymap.set("t", lhs, [[<C-\><C-n><Space>]],
+      vim.tbl_extend("force", o, { remap = true, desc = "Terminal: leader chord" }))
+  end
   local dir_name = { h = "left", j = "down", k = "up", l = "right" }
   for _, lhs in ipairs({ "<C-h>", "<C-j>", "<C-k>", "<C-l>" }) do
     local d = lhs:sub(4, 4)

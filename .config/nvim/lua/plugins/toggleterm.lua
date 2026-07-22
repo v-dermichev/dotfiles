@@ -31,6 +31,10 @@ return {
     end,
     shade_terminals = true,
     start_in_insert = true,
+    -- Don't force-scroll to bottom on every output chunk: it fights scrolling
+    -- up while a command is still printing. Nvim's native follow still applies
+    -- (cursor on the last line follows output; scroll up to unpin, G to repin).
+    auto_scroll = false,
     persist_size = true,
     persist_mode = true,
     direction = "horizontal",
