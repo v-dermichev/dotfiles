@@ -22,8 +22,8 @@ local PREVIEW_CMD = [[sh -c '
 id={1}
 low=$(echo $id | tr "[:upper:]" "[:lower:]")
 reg=$(curl -s --compressed https://api.nuget.org/v3/registration5-gz-semver2/$low/index.json)
-pub=$(echo "$reg" | jq -r ".items[-1] | if .items then .items[-1].catalogEntry.published[0:10] else empty end" 2>/dev/null)
-[ -z "$pub" ] && pub=$(curl -s --compressed "$(echo "$reg" | jq -r ".items[-1][\"@id\"]")" 2>/dev/null | jq -r ".items[-1].catalogEntry.published[0:10]" 2>/dev/null)
+pub=$(echo "$reg" | jq -r "[.items[-1].items[]?.catalogEntry.published | select(.[0:4] != \"1900\")] | max // empty | .[0:10]" 2>/dev/null)
+[ -z "$pub" ] && pub=$(curl -s --compressed "$(echo "$reg" | jq -r ".items[-1][\"@id\"]")" 2>/dev/null | jq -r "[.items[]?.catalogEntry.published | select(.[0:4] != \"1900\")] | max // empty | .[0:10]" 2>/dev/null)
 curl -s --get ]] .. SEARCH_URL .. [[ --data-urlencode "q=packageid:$id" | jq -r "]] ..
   [[def h: if .>=1e9 then \"\(./1e9*10|floor/10)B\" elif .>=1e6 then \"\(./1e6*10|floor/10)M\" elif .>=1e3 then \"\(./1e3*10|floor/10)K\" else tostring end;]] ..
   [[.data[0] | \"\(.id)  \(if .verified then \"✓ verified\" else \"\" end)\n\" +]] ..
