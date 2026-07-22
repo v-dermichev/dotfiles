@@ -27,6 +27,13 @@ map.set("t", "<C-S-v>", function()
   if chan then vim.fn.chansend(chan, (vim.fn.getreg("+"):gsub("\n$", ""))) end
 end, { desc = "Terminal: paste system clipboard" })
 
+-- Same Neovide gap for the cmdline and insert mode: unmapped <C-S-v> falls
+-- through to C-v = literal-next (":" line shows ^ + the next key verbatim).
+-- <C-r>+ inserts the clipboard register; the <C-o> variant in insert mode
+-- pastes the text literally instead of re-running indent/abbreviations on it.
+map.set("c", "<C-S-v>", "<C-r>+", { desc = "Cmdline: paste system clipboard" })
+map.set("i", "<C-S-v>", "<C-r><C-o>+", { desc = "Insert: paste system clipboard" })
+
 map.set("n", "<A-CR>", vim.lsp.buf.code_action, vim.tbl_extend("force", options, { desc = "Code action (intentions)" }))
 map.set("n", "K", vim.lsp.buf.hover, vim.tbl_extend("force", options, { desc = "LSP hover" }))
 map.set("n", "<leader>D", vim.diagnostic.open_float, vim.tbl_extend("force", options, { desc = "Diagnostic float" }))
