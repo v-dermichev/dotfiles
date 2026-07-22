@@ -57,7 +57,20 @@ return {
             vim.api.nvim_set_current_win(tree)
             vim.cmd("belowright DBUI")
           else
-            vim.cmd("DBUI")
+            -- No tree: split the main editor window instead of letting DBUI
+            -- create a frame-level full-height column, which would squeeze
+            -- the bottom terminal slot's width.
+            for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+              local b = vim.api.nvim_win_get_buf(w)
+              if vim.api.nvim_win_get_config(w).relative == "" and vim.bo[b].buftype == "" then
+                vim.api.nvim_set_current_win(w)
+                break
+              end
+            end
+            vim.cmd("aboveleft vertical DBUI")
+            if vim.bo[vim.api.nvim_get_current_buf()].filetype == "dbui" then
+              vim.api.nvim_win_set_width(0, 32) -- match the tree column width
+            end
           end
           if slot_win and vim.api.nvim_win_is_valid(slot_win) then
             pcall(vim.api.nvim_win_set_height, slot_win, slot_h)
