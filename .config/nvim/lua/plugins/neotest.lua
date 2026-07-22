@@ -113,6 +113,17 @@ return {
       },
     })
 
+    -- neotest-vstest models TestCase/Theory parents as type "parameterized";
+    -- neotest's status consumer falls back to pos.type for positions without
+    -- results and places a "neotest_<type>" sign it never defined for that
+    -- vstest-specific type — E155 spam on entering files with parameterized
+    -- tests. Define it like the namespace sign (both are grouping nodes).
+    local ncfg = require("neotest.config")
+    vim.fn.sign_define("neotest_parameterized", {
+      text = ncfg.icons.namespace,
+      texthl = ncfg.highlights.namespace,
+    })
+
     -- On opening a Python or C# file, force discovery of its tests so the
     -- gutter markers render immediately instead of only after the first run.
     vim.api.nvim_create_autocmd("FileType", {
