@@ -62,6 +62,16 @@ return {
                 if url:match("^mysql://") and mysql_is_mariadb() then
                   url = "mariadb://" .. url:sub(#"mysql://" + 1)
                 end
+                -- MariaDB client 11.4+ verifies server certs by default and
+                -- refuses the self-signed ones local/docker dev servers use
+                -- (ERROR 2026). For local connections, keep TLS but drop the
+                -- verification — unless the url already carries params.
+                local host = url:match("^m[%w]+://[^@/]*@([^:/?]+)")
+                if (host == "localhost" or host == "127.0.0.1")
+                    and (url:match("^mariadb://") or url:match("^mysql://"))
+                    and not url:find("?", 1, true) then
+                  url = url .. "?ssl-verify-server-cert=off"
+                end
                 table.insert(dbs, { name = name:lower(), url = url })
               end
             end
