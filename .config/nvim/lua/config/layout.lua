@@ -70,6 +70,10 @@ function M.apply()
       if docked_now or api.nvim_win_get_height(w) < 3 then
         pcall(api.nvim_win_set_height, w, M.dims.slot_h)
       end
+      -- 'equalalways' redistributes heights on every split/close elsewhere,
+      -- visibly jiggling the slot (terminal flicker on drawer toggles);
+      -- winfixheight makes equalization skip it.
+      vim.wo[w].winfixheight = true
     end
 
     -- Sidebar width sanity: with no editor open, sidebars absorb the whole

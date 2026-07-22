@@ -54,6 +54,7 @@ run_case "drawer-toggle-stability" '
         if not o.drawer then fail("cycle " .. i .. ": no drawer") break end
         if o.drawer.col ~= o.tree.col then fail("cycle " .. i .. ": drawer not in tree column") end
         if o.tree.w ~= w0.tree.w then fail("cycle " .. i .. ": tree width drifted " .. w0.tree.w .. "->" .. o.tree.w) end
+        if o.term.h ~= w0.term.h then fail("cycle " .. i .. ": term height jiggled DURING open " .. w0.term.h .. "->" .. o.term.h) end
         fn()
         local c = win_info()
         if c.drawer then fail("cycle " .. i .. ": drawer did not close") end
