@@ -597,6 +597,12 @@ local function open_token(text, col)
   local target = vim.fn.bufadd(path)
   vim.fn.bufload(target)
   vim.bo[target].buflisted = true
+  -- bufload skips filetype detection entirely — without this the buffer has
+  -- no ft, so no treesitter/LSP/highlighting (first seen on a csproj opened
+  -- from dotnet build output).
+  if vim.bo[target].filetype == "" then
+    vim.api.nvim_buf_call(target, function() vim.cmd("filetype detect") end)
+  end
   vim.api.nvim_win_set_buf(win, target)
   vim.api.nvim_set_current_win(win)
   pcall(vim.api.nvim_win_set_cursor, win, { tok.lnum or 1, math.max((tok.col or 1) - 1, 0) })
