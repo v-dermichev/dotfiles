@@ -1,42 +1,11 @@
 -- Interactive NuGet package installer on top of fzf-lua.
 -- <leader><leader>n → live search on the NuGet API; preview shows package
--- info + download counts; Enter installs the latest version into the nearest
--- .csproj (dotnet add package), Ctrl-V picks a specific version first.
+-- info, release date and download counts; Enter installs the latest version
+-- into the nearest .csproj (dotnet add package), Ctrl-V picks a version.
+-- All API plumbing lives in scripts/nuget.sh (search|preview|versions).
 local M = {}
 
-local SEARCH_URL = "https://azuresearch-usnc.nuget.org/query"
-
--- jq helper: humanize download counts (8738738690 -> "8.7B")
-local JQ_HUMANIZE =
-  [[def h: if .>=1e9 then "\(./1e9*10|floor/10)B" elif .>=1e6 then "\(./1e6*10|floor/10)M" elif .>=1e3 then "\(./1e3*10|floor/10)K" else tostring end;]]
-
--- One search-result line: "<id>\t<version>\t<downloads>\t<verified>"
-local function search_cmd(query)
-  return string.format(
-    [[curl -s --get %s --data-urlencode q=%s --data-urlencode take=40 --data-urlencode prerelease=false | jq -r '%s .data[] | [.id, .version, (.totalDownloads // 0 | h), (if .verified then "✓" else "·" end)] | @tsv']],
-    SEARCH_URL, vim.fn.shellescape(query or ""), JQ_HUMANIZE)
-end
-
--- fzf preview: {1} is the package id (fzf quotes placeholders safely).
-local PREVIEW_CMD = [[sh -c '
-id={1}
-low=$(echo $id | tr "[:upper:]" "[:lower:]")
-reg=$(curl -s --compressed https://api.nuget.org/v3/registration5-gz-semver2/$low/index.json)
-pub=$(echo "$reg" | jq -r "[.items[-1].items[]?.catalogEntry.published | select(.[0:4] != \"1900\")] | max // empty | .[0:10]" 2>/dev/null)
-[ -z "$pub" ] && pub=$(curl -s --compressed "$(echo "$reg" | jq -r ".items[-1][\"@id\"]")" 2>/dev/null | jq -r "[.items[]?.catalogEntry.published | select(.[0:4] != \"1900\")] | max // empty | .[0:10]" 2>/dev/null)
-curl -s --get ]] .. SEARCH_URL .. [[ --data-urlencode "q=packageid:$id" | jq -r "]] ..
-  [[def h: if .>=1e9 then \"\(./1e9*10|floor/10)B\" elif .>=1e6 then \"\(./1e6*10|floor/10)M\" elif .>=1e3 then \"\(./1e3*10|floor/10)K\" else tostring end;]] ..
-  [[.data[0] | \"\(.id)  \(if .verified then \"✓ verified\" else \"\" end)\n\" +]] ..
-  [[\"latest:    \(.version)\n\" +]] ..
-  [[\"updated:   ${pub:--}\n\" +]] ..
-  [[\"downloads: \(.totalDownloads // 0 | h)  (total)\n\" +]] ..
-  [[\"owners:    \(.owners // [] | join(\", \"))\n\" +]] ..
-  [[\"project:   \(.projectUrl // \"-\")\n\" +]] ..
-  [[\"tags:      \(.tags // [] | join(\", \") | if . == \"\" then \"-\" else . end)\n\n\" +]] ..
-  [[\"\(.description // \"\")\n\n\" +]] ..
-  [[\"── recent versions ──\n\" +]] ..
-  [[( [.versions[] | {v: .version, d: .downloads}] | reverse | .[0:12] | map(\"\(.v)  (\(.d // 0 | h))\") | join(\"\n\"))"
-']]
+local SCRIPT = vim.fn.stdpath("config") .. "/scripts/nuget.sh"
 
 -- Locate the target .csproj: nearest upward from the current file, else the
 -- projects under cwd (vim.ui.select when there are several). Async: calls
@@ -75,29 +44,29 @@ local function install(package_id, version)
   end)
 end
 
+local function selected_id(selected)
+  return selected[1] and selected[1]:match("^([^\t]+)")
+end
+
 local function pick_version(package_id)
-  local fzf = require("fzf-lua")
-  local cmd = string.format(
-    [[curl -s --get %s --data-urlencode q=packageid:%s | jq -r '%s .data[0].versions | reverse | .[] | [.version, (.downloads // 0 | h)] | @tsv']],
-    SEARCH_URL, vim.fn.shellescape(package_id), JQ_HUMANIZE)
-  fzf.fzf_exec(cmd, {
-    prompt = package_id .. " version> ",
-    fzf_opts = { ["--delimiter"] = "\t", ["--header"] = "enter: install this version" },
-    actions = {
-      ["default"] = function(selected)
-        local version = selected[1] and selected[1]:match("^([^\t]+)")
-        if version then install(package_id, version) end
-      end,
-    },
-  })
+  require("fzf-lua").fzf_exec(
+    SCRIPT .. " versions " .. vim.fn.shellescape(package_id), {
+      prompt = package_id .. " version> ",
+      fzf_opts = { ["--delimiter"] = "\t", ["--header"] = "enter: install this version" },
+      actions = {
+        ["default"] = function(selected)
+          local version = selected_id(selected)
+          if version then install(package_id, version) end
+        end,
+      },
+    })
 end
 
 function M.pick()
-  local fzf = require("fzf-lua")
   -- fzf-lua hands the live contents fn its args as a list: args[1] = query
-  fzf.fzf_live(function(args)
+  require("fzf-lua").fzf_live(function(args)
     local query = type(args) == "table" and args[1] or args
-    return search_cmd(query)
+    return SCRIPT .. " search " .. vim.fn.shellescape(query or "")
   end, {
     prompt = "NuGet> ",
     exec_empty_query = false,
@@ -105,16 +74,16 @@ function M.pick()
       ["--delimiter"] = "\t",
       ["--nth"] = "1",
       ["--header"] = "enter: install latest │ ctrl-v: pick version",
-      ["--preview"] = PREVIEW_CMD,
+      ["--preview"] = SCRIPT .. " preview {1}",
       ["--preview-window"] = "right:55%:wrap",
     },
     actions = {
       ["default"] = function(selected)
-        local id = selected[1] and selected[1]:match("^([^\t]+)")
+        local id = selected_id(selected)
         if id then install(id) end
       end,
       ["ctrl-v"] = function(selected)
-        local id = selected[1] and selected[1]:match("^([^\t]+)")
+        local id = selected_id(selected)
         if id then pick_version(id) end
       end,
     },
