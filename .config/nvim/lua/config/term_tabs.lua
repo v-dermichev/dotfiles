@@ -119,15 +119,19 @@ local function apply_term_local_maps(buf)
     vim.keymap.set("t", lhs, [[<C-\><C-n><Space>]],
       vim.tbl_extend("force", o, { remap = true, desc = "Terminal: leader chord" }))
   end
-  local dir_name = { h = "left", j = "down", k = "up", l = "right" }
-  for _, lhs in ipairs({ "<C-h>", "<C-j>", "<C-k>", "<C-l>" }) do
+  -- Up/down window nav only: the slot is always a full-width bottom pane, so
+  -- left/right nav from a terminal has nowhere to go — <C-h>/<C-l> cycle the
+  -- terminal tabs instead (<S-h>/<S-l> fall through to the global bufferline
+  -- buffer cycling, consistent with file buffers).
+  local dir_name = { j = "down", k = "up" }
+  for _, lhs in ipairs({ "<C-j>", "<C-k>" }) do
     local d = lhs:sub(4, 4)
     vim.keymap.set("t", lhs, ("<Cmd>wincmd %s<CR>"):format(d),
       vim.tbl_extend("force", o, { desc = "Window: " .. dir_name[d] }))
   end
   for _, mode in ipairs({ "n", "t" }) do
-    vim.keymap.set(mode, "<S-h>", function() M.cycle(-1) end, { buffer = buf, desc = "Terminal: prev tab" })
-    vim.keymap.set(mode, "<S-l>", function() M.cycle(1) end, { buffer = buf, desc = "Terminal: next tab" })
+    vim.keymap.set(mode, "<C-h>", function() M.cycle(-1) end, { buffer = buf, desc = "Terminal: prev tab" })
+    vim.keymap.set(mode, "<C-l>", function() M.cycle(1) end, { buffer = buf, desc = "Terminal: next tab" })
   end
   -- Clickable file:line:col links (pytest / grep style).
   vim.keymap.set("n", "gf", function() M.goto_file_cursor() end, { buffer = buf, desc = "Open file:line under cursor" })
@@ -368,7 +372,7 @@ function M.register_ext(spec)
   if i then M._ext[i] = spec else table.insert(M._ext, spec) end
   if spec.win then set_term_winbar(spec.win) end
   -- Same tab-cycling / nav keymaps as the numbered and debug terminals, so
-  -- <S-h>/<S-l> work inside this pane too.
+  -- <C-h>/<C-l> work inside this pane too.
   apply_term_local_maps(spec.buf)
   if spec.follow and spec.win then scroll_bottom(spec.win) end
   vim.schedule(function() pcall(vim.cmd, "redrawstatus") end)
