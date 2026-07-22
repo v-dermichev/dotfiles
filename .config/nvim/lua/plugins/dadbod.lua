@@ -30,6 +30,57 @@ return {
 
       local group = vim.api.nvim_create_augroup("DadbodPipeline", { clear = true })
 
+      -- Project-scoped connections without a dotenv plugin: dadbod-ui only
+      -- reads DB_UI_* from the process environment, so a project .env file is
+      -- invisible to it. Parse DB_UI_<NAME>=<url> lines from the cwd's .env
+      -- (and .env.local) ourselves and publish them via vim.g.dbs — refreshed
+      -- on startup, project switch and :cd. DBUIAddConnection entries stay
+      -- global; these live with the project and are not written anywhere.
+      -- On MariaDB systems /usr/bin/mysql is a deprecated compat shim that
+      -- prints a warning on stderr, which breaks dadbod's mysql adapter.
+      -- Detect it once; mysql:// urls are then routed to dadbod's mariadb
+      -- adapter (same url grammar, drives the `mariadb` binary directly).
+      local mariadb_shim
+      local function mysql_is_mariadb()
+        if mariadb_shim == nil then
+          mariadb_shim = vim.fn.executable("mariadb") == 1
+            and (vim.fn.executable("mysql") == 0
+              or (vim.fn.system({ "mysql", "--version" }) or ""):find("MariaDB", 1, true) ~= nil)
+        end
+        return mariadb_shim
+      end
+
+      local function load_project_dbs()
+        local dbs = {}
+        for _, envname in ipairs({ ".env", ".env.local" }) do
+          local ok, env_lines = pcall(vim.fn.readfile, vim.uv.cwd() .. "/" .. envname)
+          if ok then
+            for _, l in ipairs(env_lines) do
+              local name, url = l:match("^%s*e?x?p?o?r?t?%s*DB_UI_([%w_]+)%s*=%s*(.-)%s*$")
+              if name and url and url ~= "" then
+                url = url:gsub('^"(.*)"$', "%1"):gsub("^'(.*)'$", "%1")
+                if url:match("^mysql://") and mysql_is_mariadb() then
+                  url = "mariadb://" .. url:sub(#"mysql://" + 1)
+                end
+                table.insert(dbs, { name = name:lower(), url = url })
+              end
+            end
+          end
+        end
+        vim.g.dbs = dbs
+      end
+
+      load_project_dbs()
+      vim.api.nvim_create_autocmd({ "VimEnter", "DirChanged" }, {
+        group = group,
+        callback = load_project_dbs,
+      })
+      vim.api.nvim_create_autocmd("User", {
+        group = group,
+        pattern = "SessionLoadPost", -- neovim-project switch
+        callback = load_project_dbs,
+      })
+
       -- Query buffers: <leader>r runs the statement (normal: whole buffer /
       -- visual: selection) — mirrors the global "<leader>r runs current file".
       vim.api.nvim_create_autocmd("FileType", {
