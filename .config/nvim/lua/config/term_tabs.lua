@@ -140,13 +140,6 @@ end
 -- maps (esc/nav/cycle + gf / Ctrl-click file:line:col links) as the slot panes.
 M.apply_term_local_maps = apply_term_local_maps
 
--- Exposed for owners that dock their own pane into the slot (dadbod results):
--- clearing the current occupant first is the slot invariant every show() path
--- follows — skipping it is what piles up extra bottom panes.
-function M.hide_all()
-  hide_all_open()
-end
-
 local function hide_all_open()
   for _, t in pairs(terms().get_all(true)) do
     if t:is_open() then t:close() end
@@ -172,6 +165,15 @@ local function hide_all_open()
     end
     e.win = nil
   end
+end
+
+-- Exposed for owners that dock their own pane into the slot (dadbod results):
+-- clearing the current occupant first is the slot invariant every show() path
+-- follows — skipping it is what piles up extra bottom panes.
+-- (Must be defined after hide_all_open: forward-referencing the local yields
+-- nil and every caller silently no-ops inside its pcall.)
+function M.hide_all()
+  hide_all_open()
 end
 
 local function open(id)

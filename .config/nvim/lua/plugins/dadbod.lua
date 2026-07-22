@@ -43,9 +43,29 @@ return {
             local total = vim.api.nvim_win_get_height(tree) + vim.api.nvim_win_get_height(drawer)
             pcall(vim.api.nvim_win_set_height, drawer, math.floor(total / 2))
           end
+          -- Splitting/moving windows equalizes heights and crushes the bottom
+          -- slot; snapshot its height and restore after every layout pass.
+          local slot_win, slot_h
+          for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+            local b = vim.api.nvim_win_get_buf(w)
+            if vim.api.nvim_win_get_config(w).relative == ""
+                and (vim.bo[b].buftype == "terminal" or vim.bo[b].filetype == "dbout") then
+              slot_win, slot_h = w, vim.api.nvim_win_get_height(w)
+              break
+            end
+          end
+          local function restore_slot()
+            if slot_win and vim.api.nvim_win_is_valid(slot_win) then
+              pcall(vim.api.nvim_win_set_height, slot_win, slot_h)
+            end
+          end
           vim.cmd("DBUIToggle")
           dock_drawer()
-          vim.schedule(dock_drawer)
+          restore_slot()
+          vim.schedule(function()
+            dock_drawer()
+            restore_slot()
+          end)
         end,
         desc = "DB: toggle query UI",
       },
@@ -208,21 +228,29 @@ return {
               end
               if not win then return end
               local prev = vim.api.nvim_get_current_win()
-              -- already docked: full width at the bottom → nothing to do
-              if vim.api.nvim_win_get_width(win) >= vim.o.columns then
-                tt.register_ext({ key = "db", glyph = "\xef\x87\x80", label = "db", buf = ev.buf })
-                return
+              -- dadbod fires FileType twice per execution; once this buffer
+              -- IS the registered "db" pane, clearing again would close our
+              -- own window — just re-assert the dock geometry below.
+              local already_adopted = false
+              for _, e in ipairs(tt._ext) do
+                if e.key == "db" and e.buf == ev.buf then already_adopted = true end
               end
-              -- clear the slot BEFORE registering: the old "db" registration
-              -- still points at the previous results pane so it gets closed
-              -- too; this dbout's window isn't registered yet and survives
-              tt.hide_all()
-              tt.register_ext({
-                key = "db",
-                glyph = "\xef\x87\x80", -- nf-fa-database (U+F1C0)
-                label = "db",
-                buf = ev.buf,
-              })
+              if not already_adopted then
+                -- Always clear the slot, even when the results window is
+                -- already full width: dadbod opens it via `botright pedit`,
+                -- which LOOKS docked but stacks below whatever the slot was
+                -- showing (the extra-terminal-pane bug). The old "db"
+                -- registration still points at the previous results pane so
+                -- it gets closed too; this dbout's window isn't registered
+                -- yet and survives.
+                tt.hide_all()
+                tt.register_ext({
+                  key = "db",
+                  glyph = "\xef\x87\x80", -- nf-fa-database (U+F1C0)
+                  label = "db",
+                  buf = ev.buf,
+                })
+              end
               vim.api.nvim_win_call(win, function() vim.cmd("wincmd J") end)
               pcall(vim.api.nvim_win_set_height, win, 12)
               if vim.api.nvim_win_is_valid(prev) then
