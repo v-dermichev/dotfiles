@@ -39,4 +39,15 @@ q="$2"
       jq -r '.versions // [] | map(select(contains("-") | not)) | last // empty' 2>/dev/null)
     [ -n "$latest" ] && printf '%s\t%s\t-\t·\n' "$q" "$latest"
   fi
-} | awk -F'\t' 'tolower($1) in seen { next } { seen[tolower($1)]; print }'
+} | awk -F'\t' -v q="$(low "$q")" '
+  # dedupe by id (search rows first, so their download counts win) and float
+  # an exact-id match to the top — fzf runs disabled in live mode, so display
+  # order is feed order
+  tolower($1) in seen { next }
+  { seen[tolower($1)] }
+  tolower($1) == q { exact = $0; next }
+  { rows[++n] = $0 }
+  END {
+    if (exact != "") print exact
+    for (i = 1; i <= n; i++) print rows[i]
+  }'
