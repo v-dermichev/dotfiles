@@ -178,6 +178,14 @@ map.set('n', '<leader>r', function()
     return
   end
 
+  -- Lua: run in the same terminal slot via `nvim -l` — a headless LuaJIT
+  -- script runner that also provides the vim.* stdlib (vim.json, vim.uv, …),
+  -- so both plain Lua scripts and nvim-flavoured ones execute.
+  if vim.bo.filetype == 'lua' then
+    require('config.term_tabs').run('nvim -l ' .. vim.fn.shellescape(file))
+    return
+  end
+
   -- Default: .NET (C#). Find the nearest ancestor holding a .csproj (built-in
   -- vim.fs.root — no dependency on the deprecated lspconfig framework).
   local root_dir = vim.fs.root(file, function(nm) return nm:match("%.csproj$") ~= nil end)
@@ -189,7 +197,7 @@ map.set('n', '<leader>r', function()
     -- single file execution
     vim.cmd('!' .. 'dotnet run ' .. file)
   end
-end, { noremap = true, silent = true, desc = "Run current file (python / dotnet)" })
+end, { noremap = true, silent = true, desc = "Run current file (python / lua / dotnet)" })
 
 -- Yank the *rendered* selection: real buffer text with virtual text woven in
 -- (inlay hints and inline dap-virtual-text at their columns, eol/diagnostic
