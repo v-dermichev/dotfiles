@@ -36,7 +36,7 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
 if vim.g.neovide then
     vim.g.neovide_window_width = 1200
     vim.g.neovide_window_height = 800
-    vim.g.neovide_opacity = 0.95
+    vim.g.neovide_opacity = 0.92 -- kept in step with Hyprland $activeOpacity
     vim.g.neovide_cursor_animation_length = 0.05
     vim.g.neovide_scroll_animation_length = 0.1
     vim.g.neovide_remember_window_size = true
@@ -63,13 +63,68 @@ vim.opt.fillchars:append({ vert = "│", vertleft = "┤", vertright = "├", ho
 -- below), so re-sourcing init.lua for hot-reload replaces them instead of
 -- stacking a fresh anonymous handler on every reload.
 local user_hl_group = vim.api.nvim_create_augroup("UserHighlights", { clear = true })
+
+-- Separators track OS-window focus like Hyprland's border fade, animated.
+-- Targets are the Hyprland border colors alpha-blended over the editor
+-- background — the compositor draws them translucent (active cc≈80%,
+-- inactive 88≈53%), so the raw hex would read too bright in nvim.
+-- Neovide and kitty both deliver FocusGained/FocusLost.
+local function sep_targets()
+  local bg = vim.api.nvim_get_hl(0, { name = "Normal" }).bg or 0x16161e
+  local function to_rgb(n) return math.floor(n / 65536) % 256, math.floor(n / 256) % 256, n % 256 end
+  local function blend(c, a)
+    local cr, cg, cb = to_rgb(c)
+    local br, bgr, bb = to_rgb(bg)
+    return string.format("#%02x%02x%02x",
+      math.floor(cr * a + br * (1 - a) + 0.5),
+      math.floor(cg * a + bgr * (1 - a) + 0.5),
+      math.floor(cb * a + bb * (1 - a) + 0.5))
+  end
+  -- Hyprland col.active_border rgba(8899aacc) / col.inactive_border rgba(2b303b88)
+  return blend(0x8899aa, 204 / 255), blend(0x2b303b, 136 / 255)
+end
+
+_G.SepFadeTimer = _G.SepFadeTimer or vim.uv.new_timer() -- survives init.lua re-source
+local sep_current
+local function sep_apply(c)
+  sep_current = c
+  vim.api.nvim_set_hl(0, "WinSeparator", { fg = c, bg = "NONE" })
+end
+local function sep_fade_to(target)
+  if sep_current == target then return end
+  local FRAMES, MS = 12, 16 -- ~190ms total
+  local r0, g0, b0 = tonumber(sep_current:sub(2, 3), 16), tonumber(sep_current:sub(4, 5), 16), tonumber(sep_current:sub(6, 7), 16)
+  local r1, g1, b1 = tonumber(target:sub(2, 3), 16), tonumber(target:sub(4, 5), 16), tonumber(target:sub(6, 7), 16)
+  local f = 0
+  _G.SepFadeTimer:stop()
+  _G.SepFadeTimer:start(0, MS, vim.schedule_wrap(function()
+    f = f + 1
+    local t = math.min(f / FRAMES, 1)
+    t = t * (2 - t) -- ease-out, matches the compositor's fade feel
+    sep_apply(string.format("#%02x%02x%02x",
+      math.floor(r0 + (r1 - r0) * t + 0.5),
+      math.floor(g0 + (g1 - g0) * t + 0.5),
+      math.floor(b0 + (b1 - b0) * t + 0.5)))
+    vim.cmd("redraw")
+    if t >= 1 then _G.SepFadeTimer:stop() end
+  end))
+end
 vim.api.nvim_create_autocmd("ColorScheme", {
   group = user_hl_group,
+  callback = function() sep_apply((sep_targets())) end,
+})
+vim.api.nvim_create_autocmd("FocusGained", {
+  group = user_hl_group,
+  callback = function() sep_fade_to((sep_targets())) end,
+})
+vim.api.nvim_create_autocmd("FocusLost", {
+  group = user_hl_group,
   callback = function()
-    vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#8899aa", bg = "NONE" }) -- matches Hyprland col.active_border
+    local _, inactive = sep_targets()
+    sep_fade_to(inactive)
   end,
 })
-vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#8899aa", bg = "NONE" }) -- matches Hyprland col.active_border
+sep_apply((sep_targets()))
 
 -- ---------------------------------------------------------------------------
 -- Semantic highlights (PyCharm / Darcula palette for LSP tokens)

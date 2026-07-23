@@ -9,8 +9,8 @@ local internal        = "eDP-1"
 local external        = "HDMI-A-1"
 local internalMode    = "1920x1080@144"
 local externalMode    = "1920x1080@120"
-local activeOpacity   = 0.95
-local inactiveOpacity = 0.90
+local activeOpacity   = 0.92
+local inactiveOpacity = 0.87
 local screenshotDir   = "~/Screenshots"
 
 ---------------------------
@@ -96,6 +96,7 @@ hl.config({
         extend_border_grab_area = 14,
         hover_icon_on_border    = true,
         border_size             = 2,
+        gaps_out                = 10,
         col = {
             active_border   = "rgba(8899aacc)",
             inactive_border = "rgba(2b303b88)",
