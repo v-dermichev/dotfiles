@@ -72,12 +72,61 @@ return {
         hide_dotfiles = false,
         hide_gitignored = false,
       },
+      components = {
+        -- Badge on files an external agent changed since they were last
+        -- viewed, and on directories for as long as any such file remains
+        -- below them (config.autosave marks paths via the Claude Code hook;
+        -- opening a file clears its mark, the dir badge falls off with the
+        -- last one).
+        agent_mark = function(config, node, state)
+          local autosave = require("config.autosave")
+          local marked = (node.type == "file" and autosave.is_marked(node.path))
+            or (node.type == "directory"
+              and autosave.has_marked_below(node.path))
+          if marked then
+            return { text = " 󰚩", highlight = "NeoTreeAgentMark" }
+          end
+          return {}
+        end,
+      },
     },
     default_component_configs = {
       indent = { with_expanders = true },
+      -- Keep the last column blank: wide right-aligned glyphs (agent_mark 󰚩)
+      -- otherwise get clipped against the window separator.
+      container = { right_padding = 1 },
     },
   },
+  -- Inject agent_mark right after the name in the stock file and directory
+  -- renderers, copied from neo-tree.defaults so everything else stays default.
+  config = function(_, opts)
+    local defaults = require("neo-tree.defaults")
+    opts.renderers = opts.renderers or {}
+    for _, kind in ipairs({ "file", "directory" }) do
+      local renderer = vim.deepcopy(defaults.renderers[kind])
+      for _, comp in ipairs(renderer) do
+        if comp[1] == "container" then
+          local content = comp.content or {}
+          -- Right-aligned in a high layer, like the git_status markers: the
+          -- container pins these to the right edge and truncates long names
+          -- underneath them, so the badge is never covered. Placed just
+          -- before git_status to sit beside those markers.
+          local pos = #content + 1
+          for i, c in ipairs(content) do
+            if c[1] == "git_status" then
+              pos = i
+              break
+            end
+          end
+          table.insert(content, pos, { "agent_mark", zindex = 20, align = "right" })
+        end
+      end
+      opts.renderers[kind] = renderer
+    end
+    require("neo-tree").setup(opts)
+  end,
   init = function()
+    vim.api.nvim_set_hl(0, "NeoTreeAgentMark", { link = "DiagnosticWarn", default = true })
     local group = vim.api.nvim_create_augroup("NeotreeAutoOpen", { clear = true })
 
     local TREE_WIDTH = 32 -- keep in sync with opts.window.width below
