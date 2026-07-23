@@ -37,6 +37,13 @@ if vim.g.neovide then
     vim.g.neovide_window_width = 1200
     vim.g.neovide_window_height = 800
     vim.g.neovide_opacity = 0.92 -- kept in step with Hyprland $activeOpacity
+    -- Uniform inset (same reasoning as kitty window_padding_width): the cell
+    -- grid never divides the pixel size exactly, so separator lines stop a
+    -- few varying pixels short of the edge; a deliberate margin hides that.
+    vim.g.neovide_padding_top = 4
+    vim.g.neovide_padding_bottom = 0
+    vim.g.neovide_padding_left = 0
+    vim.g.neovide_padding_right = 0
     vim.g.neovide_cursor_animation_length = 0.05
     vim.g.neovide_scroll_animation_length = 0.1
     vim.g.neovide_remember_window_size = true
