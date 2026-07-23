@@ -51,6 +51,8 @@ opt.undofile = true        -- Persistent undo (saves undo history)
 opt.scrolloff = 5          -- Keep 5 lines visible above/below cursor
 opt.sidescrolloff = 8      -- Keep 8 columns visible when scrolling sideways
 opt.updatetime = 250       -- Faster CursorHold: gitsigns blame, LSP highlights
+opt.showmode = false       -- No "-- TERMINAL --"/"-- INSERT --" in the cmdline; the winbar shows mode
+opt.cmdheight = 0          -- No reserved cmdline row; it appears transiently for : / search
 -- NOTE: leave splitright/splitbelow at defaults — enabling them broke the
 -- neo-tree sidebar width in the session-restore layout dance (2026-07-22).
 

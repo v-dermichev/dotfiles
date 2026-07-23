@@ -69,8 +69,33 @@ local function scroll_bottom(win)
   end
 end
 
+-- Global switch for the slot tab bar. Off: the row goes back to terminal
+-- output; tabs stay fully reachable with <C-h>/<C-l> cycling. Flip at runtime
+-- with M.toggle_tabbar().
+M.tabbar = false
+
 local function set_term_winbar(win)
-  vim.wo[win].winbar = DAP_WINBAR
+  vim.wo[win].winbar = M.tabbar and DAP_WINBAR or ""
+end
+
+-- Exposed for the toggleterm TermOpen hook (plugins/toggleterm.lua), so the
+-- numbered terminals honor the same switch.
+function M.apply_winbar(win)
+  set_term_winbar(win or 0)
+end
+
+-- Flip the tab bar and re-apply to every window currently showing a slot
+-- buffer (numbered terminals + registered externals).
+function M.toggle_tabbar()
+  M.tabbar = not M.tabbar
+  local function apply(buf)
+    if buf and vim.api.nvim_buf_is_valid(buf) then
+      for _, w in ipairs(vim.fn.win_findbuf(buf)) do set_term_winbar(w) end
+    end
+  end
+  for _, t in pairs(terms().get_all(true)) do apply(t.bufnr) end
+  prune_ext()
+  for _, e in ipairs(M._ext) do apply(e.buf) end
 end
 
 -- Highlight `path.ext:line[:col]` tokens as links in terminal/output panes.
@@ -293,6 +318,9 @@ function M.run(cmd)
   -- interactive shell so the pane stays a live terminal afterwards.
   local job = vim.fn.jobstart(cmd .. "; exec " .. vim.o.shell, { term = true })
   vim.bo[buf].buflisted = false
+  -- Same filetype as the numbered terminals: bar/statusline exclusions
+  -- (lualine disabled_filetypes) treat every slot terminal alike.
+  vim.bo[buf].filetype = "toggleterm"
   M.register_ext({ key = "run", glyph = GLYPH_RUN, label = "run", buf = buf, job = job, follow = true })
 end
 

@@ -50,8 +50,8 @@ return {
         -- Escape, pane nav, tab cycling, and gf / Ctrl-click file:line:col
         -- links — the same set the slot's debug/test panes get.
         require("config.term_tabs").apply_term_local_maps(0)
-        -- Show the terminal tab list as a winbar.
-        vim.wo.winbar = "%!v:lua.require('config.term_tabs').winbar()"
+        -- Terminal tab list winbar — gated behind term_tabs.tabbar.
+        require("config.term_tabs").apply_winbar(0)
       end,
     })
   end,
