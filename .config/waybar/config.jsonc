@@ -4,9 +4,9 @@
     "height": 30,
     "spacing": 0,
     "modules-left": [
-        "hyprland/workspaces",
-        "custom/layout",
-        "custom/hypr-split"
+        "hyprland/workspaces"
+        // "custom/layout",
+        // "custom/hypr-split"
     ],
     "modules-center": [
         "hyprland/window"
@@ -32,8 +32,10 @@
         "custom/power"
     ],
     "hyprland/workspaces": {
+        // An empty array would pin the workspace to every bar; naming the output
+        // keeps 8 on the external display where it belongs.
         "persistent-workspaces": {
-            "8": []
+            "8": ["HDMI-A-1"]
         },
         "format": "{icon}",
         "format-icons": {
@@ -46,6 +48,16 @@
             "7": "7",
             "8": "8",
             "9": "9",
+            "10": "10",
+            "11": "11",
+            "12": "12",
+            "13": "13",
+            "14": "14",
+            "15": "15",
+            "16": "16",
+            "17": "17",
+            "18": "18",
+            "19": "19",
             "IDE": "",
             "Steam": "󰓓",
             "Windows": "",
@@ -149,13 +161,13 @@
         "tooltip-format": "Power menu",
         "on-click": "echo -e 'Shutdown\\nReboot\\nSuspend' | ~/.config/hypr/scripts/wofi-wrapper.sh dmenu --prompt 'Power' | xargs -I {} bash -c 'case {} in Shutdown) loginctl poweroff;; Reboot) loginctl reboot;; Suspend) loginctl suspend;; esac'"
     },
-    "custom/layout": {
-        "exec": "layout=$(hyprctl getoption general:layout -j | jq -r '.str'); if [ \"$layout\" = \"dwindle\" ]; then echo '{\"text\": \"󰕰\", \"tooltip\": \"Layout: dwindle\", \"class\": \"dwindle\"}'; else echo '{\"text\": \"󰕫\", \"tooltip\": \"Layout: master\", \"class\": \"master\"}'; fi",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 12,
-        "on-click": "next=$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle); hyprctl eval \"hl.config({ general = { layout = '$next' } })\"; pkill -RTMIN+12 waybar"
-    },
+    // "custom/layout": {
+    //     "exec": "layout=$(hyprctl getoption general:layout -j | jq -r '.str'); if [ \"$layout\" = \"dwindle\" ]; then echo '{\"text\": \"󰕰\", \"tooltip\": \"Layout: dwindle\", \"class\": \"dwindle\"}'; else echo '{\"text\": \"󰕫\", \"tooltip\": \"Layout: master\", \"class\": \"master\"}'; fi",
+    //     "return-type": "json",
+    //     "interval": "once",
+    //     "signal": 12,
+    //     "on-click": "next=$([ \"$(hyprctl getoption general:layout -j | jq -r '.str')\" = \"dwindle\" ] && echo master || echo dwindle); hyprctl eval \"hl.config({ general = { layout = '$next' } })\"; pkill -RTMIN+12 waybar"
+    // },
     "custom/notification-center": {
         "tooltip": false,
         "format": "{icon}",
@@ -176,19 +188,19 @@
         "escape-to-close": true
     },
     "custom/opacity": {
-        "exec": "if [ \"$(hyprctl getoption decoration:active_opacity -j | jq '.float < 1')\" = \"true\" ]; then echo '{\"text\": \"󰂵\", \"tooltip\": \"Transparency: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂶\", \"tooltip\": \"Transparency: OFF\", \"class\": \"off\"}'; fi",
+        "exec": "if [ \"$(cat ${XDG_STATE_HOME:-$HOME/.local/state}/hypr/transparency 2>/dev/null)\" != \"off\" ]; then echo '{\"text\": \"󰂵\", \"tooltip\": \"Transparency: ON\", \"class\": \"on\"}'; else echo '{\"text\": \"󰂶\", \"tooltip\": \"Transparency: OFF\", \"class\": \"off\"}'; fi",
         "return-type": "json",
         "interval": "once",
         "signal": 10,
-        "on-click": "if [ \"$(hyprctl getoption decoration:active_opacity -j | jq '.float < 1')\" = \"true\" ]; then hyprctl eval 'hl.config({ decoration = { active_opacity = 1.0, inactive_opacity = 1.0 } })'; else hyprctl eval \"hl.config({ decoration = { active_opacity = ${HYPR_ACTIVE_OPACITY:-0.95}, inactive_opacity = ${HYPR_INACTIVE_OPACITY:-0.90} } })\"; fi; pkill -RTMIN+10 waybar"
+        "on-click": "hyprctl eval 'toggleTransparency()'; pkill -RTMIN+10 waybar"
     },
-    "custom/hypr-split": {
-        "exec": "~/.config/waybar/scripts/hypr-split-status.sh",
-        "return-type": "json",
-        "interval": "once",
-        "signal": 8,
-        "on-click": "~/.config/waybar/scripts/hypr-split-toggle.sh"
-    },
+    // "custom/hypr-split": {
+    //     "exec": "~/.config/waybar/scripts/hypr-split-status.sh",
+    //     "return-type": "json",
+    //     "interval": "once",
+    //     "signal": 8,
+    //     "on-click": "~/.config/waybar/scripts/hypr-split-toggle.sh"
+    // },
     "custom/wallpaper-random": {
         "format": "󰒟󰋩",
         "tooltip-format": "Random wallpaper",

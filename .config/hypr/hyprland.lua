@@ -33,28 +33,121 @@ hl.env("HYPR_EXTERNAL", external)
 hl.env("HYPR_INTERNAL_MODE", internalMode)
 
 ---------------------------
+---- PERSISTED STATE ----
+---------------------------
+
+-- Runtime toggles (Super+P, the Waybar transparency button) write their choice
+-- into this directory, and every config load reads it back. That is what makes
+-- the config agree with the last explicit choice, so `hyprctl reload` restates
+-- it instead of reverting to a default that something else has to correct.
+local stateDir = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/hypr"
+
+local function stateValue(name)
+    local f = io.open(stateDir .. "/" .. name, "r")
+    if not f then return nil end
+    local v = f:read("*l")
+    f:close()
+    return v
+end
+
+local function writeState(name, value)
+    local path = stateDir .. "/" .. name
+    local f = io.open(path, "w")
+    if not f then
+        io.popen("mkdir -p '" .. stateDir .. "'"):close()
+        f = io.open(path, "w")
+        if not f then return false end
+    end
+    f:write(value .. "\n")
+    f:close()
+    return true
+end
+
+-- Global on purpose: the manager's Lua VM persists between evals, so a function
+-- defined at config load stays callable for the rest of the session. That lets
+-- the Waybar button drive this with a single `hyprctl eval 'toggleTransparency()'`
+-- instead of shelling out to read the current opacity and then set it.
+-- Accepts "on" / "off", or nothing to flip whatever is stored.
+function toggleTransparency(action)
+    local target = action
+    if target ~= "on" and target ~= "off" then
+        target = stateValue("transparency") == "off" and "on" or "off"
+    end
+
+    writeState("transparency", target)
+
+    if target == "off" then
+        hl.config({ decoration = { active_opacity = 1.0, inactive_opacity = 1.0 } })
+    else
+        hl.config({ decoration = { active_opacity = activeOpacity, inactive_opacity = inactiveOpacity } })
+    end
+end
+
+---------------------------
 ---- MONITORS ----
 ---------------------------
 
-hl.monitor({ output = internal, mode = internalMode, position = "0x0", scale = 1 })
+local function internalPreference()
+    local v = stateValue("internal-monitor")
+    if v == "enabled" or v == "disabled" then return v end
+    return nil
+end
+
+-- Physical connection read straight from DRM. Hyprland's IPC cannot be queried
+-- from inside the config: config code runs on the compositor thread, so an inner
+-- `hyprctl` call waits on a reply that cannot be sent until it returns. sysfs is
+-- the only monitor source available in this context.
+local function drmConnected(output)
+    local p = io.popen("cat /sys/class/drm/*-" .. output .. "/status 2>/dev/null")
+    if not p then return false end
+    local out = p:read("*a") or ""
+    p:close()
+    for line in out:gmatch("[^\r\n]+") do
+        if line == "connected" then return true end
+    end
+    return false
+end
+
+-- An explicit "enabled" keeps the panel on even alongside the external display.
+-- Anything else -- "disabled", or no stored choice yet -- means the panel is off
+-- exactly while the external is attached. Both paths leave it on when nothing
+-- else is connected, so no branch here can leave the machine without output.
+local function applyInternal()
+    local disabled = internalPreference() ~= "enabled" and drmConnected(external)
+    if disabled then
+        hl.monitor({ output = internal, disabled = true })
+    else
+        hl.monitor({ output = internal, mode = internalMode, position = "0x0", scale = 1, disabled = false })
+    end
+end
+
+applyInternal()
 hl.monitor({ output = external, mode = externalMode, position = "1920x0", scale = 1 })
 
--- Auto-disable internal monitor when external is connected
--- Uses a lid switch handler to persist across DPMS/suspend/hotplug
--- (hyprctl keyword doesn't work under the lua config manager; use hyprctl eval)
-local disableInternalCmd = string.format(
-    [[hyprctl eval 'hl.monitor({ output = "%s", disabled = true })']], internal)
-local enableInternalCmd = string.format(
-    [[hyprctl eval 'hl.monitor({ output = "%s", mode = "%s", position = "0x0", scale = 1, disabled = false })']],
-    internal, internalMode)
-local externalConnectedCmd = string.format(
-    [[hyprctl monitors all -j | jq -e --arg n "%s" 'any(.[]; .name == $n)' >/dev/null]], external)
+-- swaync binds its notification layer to an output at startup; when the output
+-- set changes it can be left rendering popups on a screen that is gone while the
+-- center silently keeps collecting them. Restart it to rebind.
+local function rebindSwaync()
+    hl.exec_cmd("pkill -x swaync; setsid -f swaync >/dev/null 2>&1")
+end
 
+hl.on("monitor.added", function()
+    applyInternal()
+    rebindSwaync()
+end)
+
+hl.on("monitor.removed", function()
+    applyInternal()
+    rebindSwaync()
+end)
+
+-- Lid transitions route through the same script as Super+P so every state change
+-- has one writer; `auto` follows whether the external display is attached.
 hl.bind("switch:on:Lid Switch",
-    hl.dsp.exec_cmd(externalConnectedCmd .. " && " .. disableInternalCmd),
+    hl.dsp.exec_cmd("~/.config/hypr/scripts/toggle-internal-monitor.sh auto"),
     { locked = true })
 hl.bind("switch:off:Lid Switch",
-    hl.dsp.exec_cmd(externalConnectedCmd .. " && " .. disableInternalCmd .. " || " .. enableInternalCmd),
+    hl.dsp.exec_cmd("~/.config/hypr/scripts/toggle-internal-monitor.sh auto"),
     { locked = true })
 
 ---------------------------
@@ -84,10 +177,12 @@ hl.config({
         enabled = true,
     },
 
+    -- Fully opaque only when transparency has been switched off; any other value,
+    -- including no stored choice yet, uses the blended defaults above.
     decoration = {
         rounding         = 8,
-        active_opacity   = activeOpacity,
-        inactive_opacity = inactiveOpacity,
+        active_opacity   = stateValue("transparency") == "off" and 1.0 or activeOpacity,
+        inactive_opacity = stateValue("transparency") == "off" and 1.0 or inactiveOpacity,
     },
 
     general = {
@@ -116,15 +211,19 @@ hl.config({
 ---- WORKSPACES ----
 ---------------------------
 
-hl.workspace_rule({ workspace = "1", monitor = external, default = true })
-hl.workspace_rule({ workspace = "2", monitor = external })
-hl.workspace_rule({ workspace = "3", monitor = external })
-hl.workspace_rule({ workspace = "4", monitor = external })
-hl.workspace_rule({ workspace = "5", monitor = external })
-hl.workspace_rule({ workspace = "6", monitor = external })
-hl.workspace_rule({ workspace = "7", monitor = external })
-hl.workspace_rule({ workspace = "8", monitor = external })
-hl.workspace_rule({ workspace = "9", monitor = internal, default = true })
+-- 1-9 belong to the external display, 10-19 to the internal panel. The lowest of
+-- each range is that monitor's default, so it is the one shown when the monitor
+-- appears with no workspace of its own yet.
+local function assignWorkspaces(first, last, monitor)
+    for i = first, last do
+        local rule = { workspace = tostring(i), monitor = monitor }
+        if i == first then rule.default = true end
+        hl.workspace_rule(rule)
+    end
+end
+
+assignWorkspaces(1, 9, external)
+assignWorkspaces(10, 19, internal)
 
 -- Named workspaces
 hl.workspace_rule({ workspace = "name:IDE", monitor = external })
@@ -155,8 +254,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("brave", { workspace = "1" })
     hl.exec_cmd("wl-paste --watch cliphist store")
     hl.exec_cmd("wayscriber --daemon")
-    hl.exec_cmd(externalConnectedCmd .. " && " .. disableInternalCmd)
-    hl.exec_cmd("~/.config/hypr/scripts/monitor-watcher.sh")
     hl.exec_cmd("~/.config/hypr/scripts/test-browser-watcher.sh")
     hl.exec_cmd("kitty yazi ~", { workspace = "2" })
 end)
@@ -223,6 +320,14 @@ for i = 1, 9 do
     hl.bind(mod .. " + SHIFT + " .. i,     hl.dsp.window.move({ workspace = i }))
 end
 
+-- ALT shifts the same number row onto the internal panel's 10-19 bank, with 0
+-- standing in for 10 so the digits stay in their natural left-to-right order.
+for i = 0, 9 do
+    local ws = (i == 0) and 10 or (10 + i)
+    hl.bind(mod .. " + ALT + " .. i,           hl.dsp.focus({ workspace = ws }))
+    hl.bind(mod .. " + SHIFT + ALT + " .. i,   hl.dsp.window.move({ workspace = ws }))
+end
+
 -- Task manager
 hl.bind("CTRL + SHIFT + escape", hl.dsp.exec_cmd("missioncenter"))
 
@@ -281,4 +386,48 @@ hl.window_rule({
     name  = "steam",
     match = { class = "^(steam)$" },
     workspace = "name:Steam",
+})
+
+-- Steam games (any steam_app_* window): fullscreen on workspace 8,
+-- exempt from opacity blending and blur
+hl.window_rule({
+    name  = "steam-games",
+    match = { class = [[^(steam_app_\d+)$]] },
+    workspace = "8",
+    fullscreen = true,
+    opacity    = 1.0,
+    no_blur    = true,
+})
+
+-- Telegram: every toplevel (main window, detached chats, incoming-call popups)
+-- belongs on the telegram scratchpad. `silent` places it there without pulling
+-- the view along, so a call arriving mid-game cannot spawn a window over a
+-- fullscreen client and knock it out of fullscreen.
+hl.window_rule({
+    name  = "telegram",
+    match = { class = [[^(org\.telegram\.desktop)$]] },
+    workspace = "special:telegram silent",
+})
+
+-- Remaining scratchpad apps. `on_created_empty` only launches the app; placement
+-- of the window it eventually maps is decided by whichever workspace is focused
+-- at map time. Pinning each class makes that deterministic, so toggling between
+-- scratchpads while one is still starting cannot land its window on a neighbour.
+-- Chromium derives an --app window's class as chrome-<host>__-<profile-directory>.
+hl.window_rule({
+    name  = "obsidian",
+    match = { class = "^(obsidian)$" },
+    workspace = "special:obsidian silent",
+})
+
+hl.window_rule({
+    name  = "music",
+    match = { class = [[^(chrome-music\.yandex\.ru.*)$]] },
+    workspace = "special:music silent",
+})
+
+hl.window_rule({
+    name  = "messenger",
+    match = { class = [[^(chrome-messenger\.360\.yandex\.com.*)$]] },
+    workspace = "special:messenger silent",
 })
