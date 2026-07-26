@@ -52,6 +52,22 @@ window#waybar.hidden {
     transition-duration: .5s;
 }
 
+/* Nerd Font icons are drawn wider than their 600-unit advance and overhang
+   asymmetrically, so each one sits off-centre by a different amount. CSS cannot
+   touch a glyph's side bearings, but a button holds exactly one glyph, so
+   uneven padding recentres it. Shift = (rsb - lsb) / 2, scaled to the 13px
+   font-size above; total padding stays 10px so button widths are unchanged.
+   Recompute these if the icon or font-size changes:
+     lsb/rsb come from `hmtx` and the glyph bbox in JetBrainsMonoNerdFont.
+   The per-workspace class is the name with `special:` already stripped, so the
+   selector is `.discord`, not `.special-discord`. */
+#workspaces button.special.discord   { padding: 0 8px 0 2px; }      /* U+F1FF  -3.0px */
+#workspaces button.special.messenger { padding: 0 7.1px 0 2.9px; }  /* U+F1D8  -2.1px */
+#workspaces button.special.telegram  { padding: 0 6.8px 0 3.2px; }  /* U+F048A -1.8px */
+#workspaces button.special.music     { padding: 0 6.5px 0 3.5px; }  /* U+F0386 -1.5px */
+#workspaces button.special.obsidian  { padding: 0 6.5px 0 3.5px; }  /* U+F14E7 -1.5px */
+/* tests (U+F0668) is already symmetric at 91/91 and needs no offset. */
+
 #workspaces button.special:hover {
     background-color: rgba(0, 0, 0, 0.2);
     box-shadow: inset 0 -3px #ffffff;
