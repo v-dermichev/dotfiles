@@ -1,5 +1,7 @@
--- Hyprland Lua config, translated from hyprland.conf (kept as hyprland.conf.pre-lua.bak).
--- Rollback: delete/rename this file and `hyprctl reload` — Hyprland falls back to hyprland.conf.
+-- Hyprland config for the Lua config manager (Hyprland >= 0.55). There is no
+-- hyprland.conf counterpart: the state files read back at load need Lua's file
+-- I/O, which the legacy format cannot express.
+-- Hardware-specific values are the locals directly below.
 
 ---------------------------
 ---- VARIABLES ----

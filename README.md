@@ -4,7 +4,9 @@
 
 Hyprland + Waybar setup with transparent windows, nerd font icons, smart monitor management, and a unified dark theme across all components.
 
-All hardware-specific values (monitor names, resolutions, opacity) are configurable via locals at the top of `hyprland.lua` — no need to hunt through the config. (Hyprland ≥ 0.55 uses the Lua config manager; `hyprland.conf` is kept as a legacy fallback for older versions.)
+All hardware-specific values (monitor names, resolutions, opacity) are configurable via locals at the top of `hyprland.lua` — no need to hunt through the config.
+
+This setup requires the Lua config manager (Hyprland ≥ 0.55) and has no `hyprland.conf` equivalent. The config reads its own state files back at load to keep runtime toggles across reloads, which needs Lua's file I/O — the legacy `.conf` format cannot express it. Older versions are not supported; the last `hyprland.conf` is in history at `4882a60` if you need a starting point.
 
 ## Quick Start
 

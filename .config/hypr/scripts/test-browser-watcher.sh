@@ -4,7 +4,8 @@
 #      playwright, chromedriver, ...) to `special:tests` as floating windows.
 #   2. Hide waybar while the `tests` scratchpad is visible; restore on hide.
 #
-# Started via exec-once from hyprland.conf. Exits if the event socket is gone.
+# Started from the hyprland.start handler in hyprland.lua. Exits if the event
+# socket is gone.
 
 set -u
 
