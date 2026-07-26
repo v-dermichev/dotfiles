@@ -236,6 +236,7 @@ hl.workspace_rule({ workspace = "name:Windows", monitor = external })
 hl.workspace_rule({ workspace = "special:music", on_created_empty = "chromium --app=https://music.yandex.ru --profile-directory=Music" })
 hl.workspace_rule({ workspace = "special:messenger", on_created_empty = "chromium --app=https://messenger.360.yandex.com/ --profile-directory=Messenger" })
 hl.workspace_rule({ workspace = "special:telegram", on_created_empty = "telegram-desktop" })
+hl.workspace_rule({ workspace = "special:discord", on_created_empty = "discord" })
 hl.workspace_rule({ workspace = "special:obsidian", on_created_empty = "obsidian" })
 hl.workspace_rule({ workspace = "special:tests" })
 
@@ -282,6 +283,7 @@ hl.bind(mod .. " + X", hl.dsp.workspace.toggle_special("music"))
 hl.bind(mod .. " + C", hl.dsp.workspace.toggle_special("obsidian"))
 hl.bind(mod .. " + V", hl.dsp.workspace.toggle_special("telegram"))
 hl.bind(mod .. " + B", hl.dsp.workspace.toggle_special("tests"))
+hl.bind(mod .. " + N", hl.dsp.workspace.toggle_special("discord"))
 
 -- Named workspaces
 hl.bind(mod .. " + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/workspace-launch.sh IDE neovide"))
@@ -390,6 +392,14 @@ hl.window_rule({
     workspace = "name:Steam",
 })
 
+-- virt-manager connects to libvirt before mapping anything, so it is slow enough
+-- that focus has usually moved on by the time its window appears.
+hl.window_rule({
+    name  = "virt-manager",
+    match = { class = "^(virt-manager)$" },
+    workspace = "name:Windows",
+})
+
 -- Steam games (any steam_app_* window): fullscreen on workspace 8,
 -- exempt from opacity blending and blur
 hl.window_rule({
@@ -409,6 +419,12 @@ hl.window_rule({
     name  = "telegram",
     match = { class = [[^(org\.telegram\.desktop)$]] },
     workspace = "special:telegram silent",
+})
+
+hl.window_rule({
+    name  = "discord",
+    match = { class = "^(discord)$" },
+    workspace = "special:discord silent",
 })
 
 -- Remaining scratchpad apps. `on_created_empty` only launches the app; placement
