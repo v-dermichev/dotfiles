@@ -67,11 +67,11 @@
             "special:discord": "",
             "special:obsidian": "󱓧",
             "special:tests": "󰙨",
-            "music": "󰎇",
+            "music": "󰎆",
             "messenger": "",
             "discord": "",
             "telegram": "󰒊",
-            "obsidian": "󰹕",
+            "obsidian": "󱓧",
             "tests": "󰙨",
             "default": "{name}"
         },

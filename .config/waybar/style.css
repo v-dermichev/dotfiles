@@ -68,6 +68,12 @@ window#waybar.hidden {
 #workspaces button.special.obsidian  { padding: 0 6.5px 0 3.5px; }  /* U+F14E7 -1.5px */
 /* tests (U+F0668) is already symmetric at 91/91 and needs no offset. */
 
+/* Named workspaces, same correction at the 14px base font-size. Numbered
+   workspaces render digits rather than glyphs, so they need nothing. */
+#workspaces button.steam   { padding: 0 6.6px 0 3.4px; }  /* U+F04D3 -1.6px */
+#workspaces button.windows { padding: 0 6.2px 0 3.8px; }  /* U+E70F  -1.2px */
+#workspaces button.ide     { padding: 0 5.9px 0 4.1px; }  /* U+E6AE  -0.9px */
+
 #workspaces button.special:hover {
     background-color: rgba(0, 0, 0, 0.2);
     box-shadow: inset 0 -3px #ffffff;
