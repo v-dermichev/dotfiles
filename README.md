@@ -182,9 +182,28 @@ Add your user to the `audio` group: `gpasswd -a $USER audio`
 All workspaces use waybar's native `hyprland/workspaces` module — no custom modules or generators needed.
 
 - **Scratchpads** — toggle-overlay apps defined in `hyprland.lua` with `hl.workspace_rule({ workspace = "special:name", on_created_empty = "command" })`
-- **Named workspaces** — dedicated app workspaces (IDE, Steam) with `workspace-launch.sh` for launch-on-first-visit
-- **Icons** — configured via waybar's `format-icons` mapping workspace names to nerd font glyphs
+- **Pin every scratchpad app with a window rule** — `on_created_empty` only *launches* the command. The window it eventually maps goes to whichever workspace is focused at map time, so without a matching `hl.window_rule({ ..., workspace = "special:name silent" })` a slow-starting app lands on a neighbouring scratchpad, and an app that opens windows unprompted (an incoming Telegram call) can spawn one over a fullscreen game. Chromium `--app` windows take the class `chrome-<host>__-<profile-directory>`
+- **Named workspaces** — dedicated app workspaces (IDE, Steam) with `workspace-launch.sh`, which relaunches the app when *it* has no window on the workspace; unrelated windows sharing that workspace are ignored
+- **Icons** — configured via waybar's `format-icons` mapping workspace names to nerd font glyphs. Values are literal strings, so a `"default": "{name}"` fallback renders that placeholder verbatim — give every workspace you use its own entry
 - **Notifications** — apps like Telegram set the WM urgent hint natively, waybar highlights with `.urgent` CSS class (blue tint)
+
+### Monitors & Persisted State
+
+Numbered workspaces are split across the two displays: **1–9 on the external**, **10–19 on the internal panel**. `SUPER + <digit>` reaches the first bank, `SUPER + ALT + <digit>` the second (with `0` standing in for 10); add `SHIFT` to move the focused window instead. `SUPER + P` toggles the internal panel.
+
+Runtime toggles write their choice under `~/.local/state/hypr/` and `hyprland.lua` reads it back at load, so `hyprctl reload` restates the current setup instead of reverting to the declared defaults:
+
+| File | Written by | Read by |
+|---|---|---|
+| `internal-monitor` | `toggle-internal-monitor.sh` (`toggle`/`on`/`off`/`auto`) | monitor declaration |
+| `transparency` | `toggleTransparency()` in `hyprland.lua` | `decoration` opacity |
+
+Two properties of the Lua config manager shape this:
+
+- **`hyprctl` cannot be called from config context.** Config code runs on the compositor thread, so an inner `hyprctl` call waits for a reply that cannot be sent until it returns, and times out. Anything the config needs to know about hardware must come from elsewhere — the monitor connection check reads `/sys/class/drm/*-<output>/status`.
+- **The Lua VM persists between evals.** A global function defined at config load stays callable, so the Waybar transparency button is a single `hyprctl eval 'toggleTransparency()'` rather than a read-modify-write through `hyprctl getoption` and `jq`. Note that `hyprctl eval` prints `ok` and discards return values, so status readouts still have to read the state file directly.
+
+The internal panel is disabled only while the external display is attached; with nothing else connected it always comes back on, so no reload or hotplug can leave the machine without output.
 
 ### Wallpaper Roulette
 
@@ -236,9 +255,9 @@ Use `app-name` for apps with unique names, `body` (regex) for web app notificati
 
 **Brave password autofill not working** — Known bug in Brave 1.88.x/Chromium 146 on Wayland ([#50882](https://github.com/brave/brave-browser/issues/50882)). Fix: add `--enable-features=UseOzonePlatform` and `--ozone-platform=x11` to `~/.config/brave-flags.conf`.
 
-**Cursor disappearing/flickering on NVIDIA** — Set `no_hardware_cursors = true` in `hyprland.conf` cursor section. Hardware cursors work on newer NVIDIA drivers (590+) but may cause issues on older versions or multi-monitor setups.
+**Cursor disappearing/flickering on NVIDIA** — Set `no_hardware_cursors = true` in the `hyprland.lua` cursor section. Hardware cursors work on newer NVIDIA drivers (590+) but may cause issues on older versions or multi-monitor setups.
 
-**Internal monitor keeps re-enabling** — the runtime disable (`hyprctl eval 'hl.monitor({ output = ..., disabled = true })'`) is an override that doesn't survive DPMS/suspend cycles or config reloads. The included `monitor-watcher.sh` listens to Hyprland events and re-enforces the disable. Note: re-enabling requires an explicit `disabled = false` — the flag is sticky.
+**Internal monitor keeps re-enabling** — a runtime disable (`hyprctl eval 'hl.monitor({ output = ..., disabled = true })'`) is only an override; any config reload re-declares the monitor and undoes it. The fix is to make the config agree with the choice rather than to detect and correct it afterwards: `toggle-internal-monitor.sh` records the state in `~/.local/state/hypr/internal-monitor`, and `hyprland.lua` reads it back on every load. Hotplug is handled in-config by `hl.on("monitor.added")` / `hl.on("monitor.removed")`, so no watcher process is involved. Note that re-enabling needs an explicit `disabled = false` — the flag is sticky.
 
 **Steam/Proton games crash on launch or stutter under shader compile (UE5, large titles)** — Modern engines open thousands of shader/PSO files in parallel during precompile. The default `nofile` ulimit (often 4096 on a fresh Artix install) gets exhausted and the game dies with a generic `EXCEPTION_ACCESS_VIOLATION` whose real cause only shows up in `~/steam-<appid>.log` after setting `PROTON_LOG=1` — look for `err:winediag:NtCreateFile Too many open files`. Fix via PAM (`pam_limits.so` is already in `system-auth`, no systemd needed) — create `/etc/security/limits.d/99-nofile.conf`:
 ```
