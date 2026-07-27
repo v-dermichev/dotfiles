@@ -7,24 +7,24 @@
 -- nvim-dap debuggee terminal and the neotest output panel. Each is registered
 -- as an entry in `M._ext` and shown as an extra winbar tab.
 
-local M = {}
+local M           = {}
 
 -- External slot tabs: ordered array of
 --   { key, buf, win, glyph, label, on_close?, delete_on_close? }
 -- `win` is nil while the tab is hidden; `buf` persists until its owner drops it.
-M._ext = {}
+M._ext            = {}
 
 -- Nerd Font glyphs (as raw UTF-8 byte escapes so they survive file-writes).
-local GLYPH_TERM    = "\xef\x92\x89"  -- nf-oct-terminal  (U+F489)
-local GLYPH_GIT     = "\xef\x87\x92"  -- nf-fa-code_fork  (U+F1D2)
-local GLYPH_DEBUG   = "\xef\x86\x88"  -- nf-fa-bug        (U+F188)
-local GLYPH_TEST    = "\xef\x83\x83"  -- nf-fa-flask      (U+F0C3)
-local GLYPH_RUN     = "\xef\x81\x8b"  -- nf-fa-play       (U+F04B)
-local GLYPH_CLOSE   = "\xef\x80\x8d"  -- nf-fa-times      (U+F00D)
-local SLANT_LEFT    = "\xee\x82\xb8"  -- pl-left_soft_divider  (U+E0B8)
-local SLANT_RIGHT   = "\xee\x82\xba"  -- pl-right_soft_divider (U+E0BA)
+local GLYPH_TERM  = "\xef\x92\x89" -- nf-oct-terminal  (U+F489)
+local GLYPH_GIT   = "\xef\x87\x92" -- nf-fa-code_fork  (U+F1D2)
+local GLYPH_DEBUG = "\xef\x86\x88" -- nf-fa-bug        (U+F188)
+-- local GLYPH_TEST  = "\xef\x83\x83" -- nf-fa-flask      (U+F0C3)
+local GLYPH_RUN   = "\xef\x81\x8b" -- nf-fa-play       (U+F04B)
+local GLYPH_CLOSE = "\xef\x80\x8d" -- nf-fa-times      (U+F00D)
+local SLANT_LEFT  = "\xee\x82\xb8" -- pl-left_soft_divider  (U+E0B8)
+local SLANT_RIGHT = "\xee\x82\xba" -- pl-right_soft_divider (U+E0BA)
 
-local DAP_WINBAR = "%!v:lua.require('config.term_tabs').winbar()"
+local DAP_WINBAR  = "%!v:lua.require('config.term_tabs').winbar()"
 
 local function terms()
   return require("toggleterm.terminal")
@@ -157,7 +157,8 @@ local function apply_term_local_maps(buf)
   -- "current", but vim.b[0] / win_findbuf(0) treat it as literal buffer 0.
   if buf == nil or buf == 0 then buf = vim.api.nvim_get_current_buf() end
   local o = { buffer = buf }
-  vim.keymap.set("t", "<esc>", [[<C-\><C-n>]], vim.tbl_extend("force", o, { desc = "Terminal: to normal mode" }))
+  vim.keymap.set("t", "<esc>", [[<C-\><C-n>]],
+    vim.tbl_extend("force", o, { desc = "Terminal: to normal mode" }))
   -- Leader chords from terminal-insert mode: <C-Space> leaves terminal mode and
   -- feeds <leader>, so e.g. <C-Space>T2 / <C-Space>ff work while typing in the
   -- shell. (A bare t-mode <Space> map is not an option: every literal space
@@ -178,13 +179,21 @@ local function apply_term_local_maps(buf)
       vim.tbl_extend("force", o, { desc = "Window: " .. dir_name[d] }))
   end
   for _, mode in ipairs({ "n", "t" }) do
-    vim.keymap.set(mode, "<C-h>", function() M.cycle(-1) end, { buffer = buf, desc = "Terminal: prev tab" })
-    vim.keymap.set(mode, "<C-l>", function() M.cycle(1) end, { buffer = buf, desc = "Terminal: next tab" })
+    vim.keymap.set(mode, "<C-h>", function() M.cycle(-1) end,
+      { buffer = buf, desc = "Terminal: prev tab" })
+    vim.keymap.set(mode, "<C-l>", function() M.cycle(1) end,
+      { buffer = buf, desc = "Terminal: next tab" })
   end
+  -- ZZ closes just this tab, not the pane holding all of them.
+  vim.keymap.set("n", "ZZ", function() M.close_current() end,
+    { buffer = buf, desc = "Terminal: close this tab" })
   -- Clickable file:line:col links (pytest / grep style).
-  vim.keymap.set("n", "gf", function() M.goto_file_cursor() end, { buffer = buf, desc = "Open file:line under cursor" })
-  vim.keymap.set("n", "gF", function() M.goto_file_cursor() end, { buffer = buf, desc = "Open file:line under cursor" })
-  vim.keymap.set({ "n", "t" }, "<C-LeftMouse>", function() M.goto_file_mouse() end, { buffer = buf, desc = "Open file:line under mouse" })
+  vim.keymap.set("n", "gf", function() M.goto_file_cursor() end,
+    { buffer = buf, desc = "Open file:line under cursor" })
+  vim.keymap.set("n", "gF", function() M.goto_file_cursor() end,
+    { buffer = buf, desc = "Open file:line under cursor" })
+  vim.keymap.set({ "n", "t" }, "<C-LeftMouse>", function() M.goto_file_mouse() end,
+    { buffer = buf, desc = "Open file:line under mouse" })
   ensure_link_highlight(buf)
 end
 
@@ -243,6 +252,9 @@ function M.show(id)
 
   hide_all_open()
   open(id)
+  -- TermOpen only fires when the buffer is first created, so re-showing a
+  -- hidden terminal lands in a fresh window whose winbar is still unset.
+  M.update_winbars()
 
   if saved_height then
     vim.schedule(function()
@@ -263,11 +275,13 @@ function M.redock()
   local win = find_term_win()
   if not win then
     for _, e in ipairs(M._ext) do
-      if e.win and vim.api.nvim_win_is_valid(e.win) then win = e.win; break end
+      if e.win and vim.api.nvim_win_is_valid(e.win) then
+        win = e.win; break
+      end
     end
   end
   if not win or not vim.api.nvim_win_is_valid(win) then return end
-  if vim.api.nvim_win_get_config(win).relative ~= "" then return end -- floating slot
+  if vim.api.nvim_win_get_config(win).relative ~= "" then return end  -- floating slot
   if vim.api.nvim_win_get_width(win) >= vim.o.columns then return end -- already full width
   local height = vim.api.nvim_win_get_height(win)
   vim.api.nvim_win_call(win, function() vim.cmd("wincmd J") end)
@@ -330,7 +344,10 @@ function M.run(cmd)
   -- First run, or the previous shell died: (re)create it.
   if e then
     if e.win and vim.api.nvim_win_is_valid(e.win) then pcall(vim.api.nvim_win_close, e.win, false) end
-    if e.buf and vim.api.nvim_buf_is_valid(e.buf) then pcall(vim.api.nvim_buf_delete, e.buf, { force = true }) end
+    if e.buf and vim.api.nvim_buf_is_valid(e.buf) then
+      pcall(vim.api.nvim_buf_delete, e.buf,
+        { force = true })
+    end
     table.remove(M._ext, i)
   end
   local height = slot_height()
@@ -382,7 +399,9 @@ function M.scroll_ext_bottom(key)
   if not i then return end
   local e = M._ext[i]
   for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if vim.api.nvim_win_get_buf(w) == e.buf then scroll_bottom(w); return end
+    if vim.api.nvim_win_get_buf(w) == e.buf then
+      scroll_bottom(w); return
+    end
   end
 end
 
@@ -417,7 +436,10 @@ function M.register_ext(spec)
   prune_ext()
   if not (spec.buf and vim.api.nvim_buf_is_valid(spec.buf)) then return end
   for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if vim.api.nvim_win_get_buf(w) == spec.buf then spec.win = w break end
+    if vim.api.nvim_win_get_buf(w) == spec.buf then
+      spec.win = w
+      break
+    end
   end
   local i = ext_index(spec.key)
   if i then M._ext[i] = spec else table.insert(M._ext, spec) end
@@ -426,6 +448,25 @@ function M.register_ext(spec)
   -- <C-h>/<C-l> work inside this pane too.
   apply_term_local_maps(spec.buf)
   if spec.follow and spec.win then scroll_bottom(spec.win) end
+  vim.schedule(function() pcall(vim.cmd, "redrawstatus") end)
+end
+
+-- Close an external slot tab the way the winbar's ✕ does: notify the owner,
+-- drop the window, and delete the buffer for tabs that own theirs.
+function M.close_ext(key)
+  prune_ext()
+  local i = ext_index(key)
+  if not i then return end
+  local e = M._ext[i]
+  if e.on_close then pcall(e.on_close) end
+  if e.win and vim.api.nvim_win_is_valid(e.win) then
+    pcall(vim.api.nvim_win_close, e.win, false)
+  end
+  if e.delete_on_close and e.buf and vim.api.nvim_buf_is_valid(e.buf) then
+    pcall(vim.api.nvim_buf_delete, e.buf, { force = true })
+  end
+  table.remove(M._ext, i)
+  M.update_winbars()
   vim.schedule(function() pcall(vim.cmd, "redrawstatus") end)
 end
 
@@ -463,7 +504,8 @@ function M.open_dap_win()
   })
 end
 
-function M.cycle(step)
+-- Every slot tab in winbar order: numbered terminals by id, then externals.
+local function slot_handles()
   prune_ext()
   local ids = {}
   for _, t in pairs(terms().get_all(true)) do table.insert(ids, t.id) end
@@ -472,32 +514,74 @@ function M.cycle(step)
   local handles = {}
   for _, id in ipairs(ids) do table.insert(handles, { kind = "term", id = id }) end
   for _, e in ipairs(M._ext) do table.insert(handles, { kind = "ext", key = e.key }) end
-  if #handles == 0 then open(1); return end
+  return handles
+end
 
-  -- Locate the slot currently focused (or merely open) to step from.
-  local cur_buf = vim.api.nvim_get_current_buf()
-  local idx
+-- Index of the handle whose buffer is `buf`, if any.
+local function handle_index_for_buf(handles, buf)
   for i, h in ipairs(handles) do
     if h.kind == "ext" then
       local e = M._ext[ext_index(h.key)]
-      if e and e.buf == cur_buf then idx = i; break end
+      if e and e.buf == buf then return i end
     else
       local t = terms().get(h.id, true)
-      if t and t.bufnr == cur_buf then idx = i; break end
+      if t and t.bufnr == buf then return i end
     end
   end
+end
+
+local function show_handle(h)
+  if h.kind == "ext" then M.show_ext(h.key) else M.show(h.id) end
+end
+
+function M.cycle(step)
+  local handles = slot_handles()
+  if #handles == 0 then
+    open(1); return
+  end
+
+  -- Locate the slot currently focused (or merely open) to step from.
+  local idx = handle_index_for_buf(handles, vim.api.nvim_get_current_buf())
   if not idx then
     for i, h in ipairs(handles) do
       if h.kind == "term" then
         local t = terms().get(h.id, true)
-        if t and t:is_open() then idx = i; break end
+        if t and t:is_open() then
+          idx = i; break
+        end
       end
     end
   end
   idx = (((idx or 1) - 1 + step) % #handles) + 1
+  show_handle(handles[idx])
+end
 
-  local h = handles[idx]
-  if h.kind == "ext" then M.show_ext(h.key) else M.show(h.id) end
+-- Close only the tab docked in the slot, leaving the pane on the neighbouring
+-- tab. Bound to ZZ inside slot buffers, where the built-in ZZ quits the window
+-- and so tears the whole pane down with every other tab still in it.
+-- The successor is swapped in *before* the old tab dies, so the pane never
+-- blinks out and M.show() still sees the live slot to copy its height from.
+function M.close_current()
+  local handles = slot_handles()
+  local idx = handle_index_for_buf(handles, vim.api.nvim_get_current_buf())
+  -- Not a tracked tab (e.g. its owner already dropped it): fall back to the
+  -- ordinary window close rather than silently doing nothing.
+  if not idx then
+    pcall(vim.cmd, "close")
+    return
+  end
+
+  local doomed = handles[idx]
+  local successor = handles[idx + 1] or handles[idx - 1]
+  if successor then show_handle(successor) end
+
+  if doomed.kind == "ext" then
+    M.close_ext(doomed.key)
+  else
+    local t = terms().get(doomed.id, true)
+    if t then t:shutdown() end
+  end
+  M.update_winbars()
 end
 
 -- Winbar that mirrors the bufferline "slant" style used by file tabs.
@@ -518,7 +602,15 @@ function M.winbar()
 
   if #ids == 0 and #M._ext == 0 then return "" end
 
-  local current_buf = vim.api.nvim_get_current_buf()
+  -- Which tab is "selected" is a property of the slot window being drawn, not
+  -- of where the cursor happens to be: `g:statusline_winid` is the window this
+  -- winbar is being evaluated for, so the docked tab keeps its highlight while
+  -- focus sits in the editor. (Against nvim_get_current_buf() no tab matches
+  -- once focus leaves the pane, and the whole bar dims out and back.)
+  local drawn_win = vim.g.statusline_winid
+  local current_buf = (drawn_win and vim.api.nvim_win_is_valid(drawn_win))
+      and vim.api.nvim_win_get_buf(drawn_win)
+      or vim.api.nvim_get_current_buf()
   local parts = {}
 
   -- Render one slant-styled tab: the body (left slant + label) fires `click`,
@@ -526,9 +618,9 @@ function M.winbar()
   local function push_tab(selected, label, click, close)
     local hl_tab = selected and "BufferLineBufferSelected" or "BufferLineBuffer"
     local hl_sep = selected and "BufferLineSeparatorSelected" or "BufferLineSeparator"
-    local body  = ("%%#%s#%s%%#%s# %s "):format(hl_sep, SLANT_LEFT, hl_tab, label)
-    local x     = ("%%#%s#%s "):format(hl_tab, GLYPH_CLOSE)
-    local right = ("%%#%s#%s"):format(hl_sep, SLANT_RIGHT)
+    local body   = ("%%#%s#%s%%#%s# %s "):format(hl_sep, SLANT_LEFT, hl_tab, label)
+    local x      = ("%%#%s#%s "):format(hl_tab, GLYPH_CLOSE)
+    local right  = ("%%#%s#%s"):format(hl_sep, SLANT_RIGHT)
     table.insert(parts, click .. body .. "%X" .. close .. x .. "%X" .. right)
     table.insert(parts, "%#TermTabFill# ")
   end
@@ -577,16 +669,7 @@ end
 
 _G.TermExtClose = function(minwid, _clicks, _button, _mods)
   local e = M._ext[minwid]
-  if not e then return end
-  if e.on_close then pcall(e.on_close) end
-  if e.win and vim.api.nvim_win_is_valid(e.win) then
-    pcall(vim.api.nvim_win_close, e.win, false)
-  end
-  if e.delete_on_close and e.buf and vim.api.nvim_buf_is_valid(e.buf) then
-    pcall(vim.api.nvim_buf_delete, e.buf, { force = true })
-  end
-  table.remove(M._ext, minwid)
-  vim.cmd("redrawstatus")
+  if e then M.close_ext(e.key) end
 end
 
 function M.lazygit()
@@ -608,6 +691,7 @@ function M.lazygit()
     hide_all_open()
     M._lazygit:open()
   end
+  M.update_winbars()
 end
 
 -- ── Clickable file:line:col links in terminal / output panes ─────────────
