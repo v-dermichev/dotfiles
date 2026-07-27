@@ -181,8 +181,32 @@ map.set('n', '<leader>r', function()
   -- Lua: run in the same terminal slot via `nvim -l` — a headless LuaJIT
   -- script runner that also provides the vim.* stdlib (vim.json, vim.uv, …),
   -- so both plain Lua scripts and nvim-flavoured ones execute.
+  --
+  -- Dotted `require('pkg.mod')` is resolved against package.path, whose only
+  -- project-local entry is `./?.lua` — relative to the interpreter's cwd. So the
+  -- script runs from the project root, with root and root/lua explicitly on
+  -- LUA_PATH: that covers flat layouts (`pkg/mod.lua` at the root) and
+  -- nvim-style ones (`lua/pkg/mod.lua`), which `./?.lua` alone never finds.
+  -- LUA_PATH entries land ahead of the runtimepath dirs nvim prepends, so the
+  -- project's own modules win over same-named ones in the config. The `cd` is
+  -- confined to a subshell — the run tab's shell is persistent and reused, and
+  -- must keep its own cwd.
   if vim.bo.filetype == 'lua' then
-    require('config.term_tabs').run('nvim -l ' .. vim.fn.shellescape(file))
+    local marker = vim.fs.find(
+      { '.luarc.json', '.luarc.jsonc', 'stylua.toml', '.stylua.toml', 'lua', '.git' },
+      { path = vim.fs.dirname(file), upward = true }
+    )[1]
+    local root = marker and vim.fs.dirname(marker) or vim.fs.dirname(file)
+    -- Trailing ';;' keeps LuaJIT's default path (stdlib, rocks) after ours.
+    local lua_path = table.concat({
+      root .. '/?.lua', root .. '/?/init.lua',
+      root .. '/lua/?.lua', root .. '/lua/?/init.lua',
+    }, ';') .. ';;'
+    require('config.term_tabs').run(
+      '(cd ' .. vim.fn.shellescape(root)
+      .. ' && LUA_PATH=' .. vim.fn.shellescape(lua_path)
+      .. ' nvim -l ' .. vim.fn.shellescape(file) .. ')'
+    )
     return
   end
 
