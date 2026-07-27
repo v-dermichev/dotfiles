@@ -69,25 +69,36 @@ local function scroll_bottom(win)
   end
 end
 
--- Global switch for the slot tab bar. Off: the row goes back to terminal
--- output; tabs stay fully reachable with <C-h>/<C-l> cycling. Flip at runtime
--- with M.toggle_tabbar().
-M.tabbar = false
+-- Slot tab bar visibility. "auto" (default): shown only when there is more
+-- than one tab to switch between — a lone shell keeps the row for output.
+-- true/false force it on/off; M.toggle_tabbar() flips the override.
+M.tabbar = "auto"
+
+local function tab_count()
+  local n = #M._ext
+  for _ in pairs(terms().get_all(true)) do n = n + 1 end
+  return n
+end
+
+local function tabbar_visible()
+  if M.tabbar == "auto" then return tab_count() > 1 end
+  return M.tabbar == true
+end
 
 local function set_term_winbar(win)
-  vim.wo[win].winbar = M.tabbar and DAP_WINBAR or ""
+  vim.wo[win].winbar = tabbar_visible() and DAP_WINBAR or ""
 end
 
 -- Exposed for the toggleterm TermOpen hook (plugins/toggleterm.lua), so the
--- numbered terminals honor the same switch.
+-- numbered terminals honor the same policy.
 function M.apply_winbar(win)
   set_term_winbar(win or 0)
 end
 
--- Flip the tab bar and re-apply to every window currently showing a slot
--- buffer (numbered terminals + registered externals).
-function M.toggle_tabbar()
-  M.tabbar = not M.tabbar
+-- Re-apply to every window currently showing a slot buffer — called whenever
+-- the tab set changes (terminal opened/closed, external registered/removed),
+-- so the bar appears/disappears as the count crosses 1.
+function M.update_winbars()
   local function apply(buf)
     if buf and vim.api.nvim_buf_is_valid(buf) then
       for _, w in ipairs(vim.fn.win_findbuf(buf)) do set_term_winbar(w) end
@@ -98,32 +109,44 @@ function M.toggle_tabbar()
   for _, e in ipairs(M._ext) do apply(e.buf) end
 end
 
+function M.toggle_tabbar()
+  M.tabbar = not tabbar_visible()
+  M.update_winbars()
+end
+
 -- Highlight `path.ext:line[:col]` tokens as links in terminal/output panes.
 -- A file extension is required so it doesn't light up times or ip:port.
 local LINK_PAT = [=[[0-9A-Za-z_/+-]\+\.[A-Za-z]\+:\d\+\(:\d\+\)\?]=]
-local link_autocmd_set = false
+local link_re = vim.regex(LINK_PAT)
+local link_ns = vim.api.nvim_create_namespace("term_tabs_links")
+local link_provider_set = false
 
--- matchadd is window-local, so it must be (re)applied for every window that
--- shows a link buffer — including when a slot pane is reopened in a new window.
+-- Decoration provider keyed on b:term_links: only visible lines of link
+-- buffers are decorated (ephemeral extmarks, redrawn per frame), any window
+-- that ever shows the buffer is covered automatically, and nothing leaks to
+-- other buffers a window may show later (matchadd is window-local and would).
 local function ensure_link_highlight(buf)
   vim.b[buf].term_links = true
-  for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-    vim.api.nvim_win_call(win, function()
-      if not vim.w.term_link_match then
-        pcall(vim.fn.matchadd, "TermFileLink", LINK_PAT)
-        vim.w.term_link_match = true
-      end
-    end)
-  end
-  if link_autocmd_set then return end
-  link_autocmd_set = true
+  if link_provider_set then return end
+  link_provider_set = true
   vim.api.nvim_set_hl(0, "TermFileLink", { default = true, fg = "#56a8f5", underline = true })
-  vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter" }, {
-    group = vim.api.nvim_create_augroup("TermFileLinks", { clear = true }),
-    callback = function()
-      if vim.b.term_links and not vim.w.term_link_match then
-        pcall(vim.fn.matchadd, "TermFileLink", LINK_PAT)
-        vim.w.term_link_match = true
+  vim.api.nvim_set_decoration_provider(link_ns, {
+    on_win = function(_, _, bufnr)
+      return vim.b[bufnr].term_links == true
+    end,
+    on_line = function(_, _, bufnr, row)
+      local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+      if not line or line == "" then return end
+      local idx = 0
+      while idx < #line do
+        local s, e = link_re:match_str(line:sub(idx + 1))
+        if not s then break end
+        vim.api.nvim_buf_set_extmark(bufnr, link_ns, row, idx + s, {
+          end_col = idx + e,
+          hl_group = "TermFileLink",
+          ephemeral = true,
+        })
+        idx = idx + e
       end
     end,
   })
@@ -380,7 +403,7 @@ function M.open_ext_win(spec)
   vim.bo[spec.buf].buflisted = false -- keep the debug terminal out of the bufferline
   local i = ext_index(spec.key)
   if i then M._ext[i] = spec else table.insert(M._ext, spec) end
-  set_term_winbar(spec.win)
+  M.update_winbars()
   apply_term_local_maps(spec.buf)
   if vim.api.nvim_win_is_valid(prev) then
     pcall(vim.api.nvim_set_current_win, prev)
@@ -398,7 +421,7 @@ function M.register_ext(spec)
   end
   local i = ext_index(spec.key)
   if i then M._ext[i] = spec else table.insert(M._ext, spec) end
-  if spec.win then set_term_winbar(spec.win) end
+  M.update_winbars()
   -- Same tab-cycling / nav keymaps as the numbered and debug terminals, so
   -- <C-h>/<C-l> work inside this pane too.
   apply_term_local_maps(spec.buf)
@@ -416,6 +439,7 @@ function M.remove_ext(key)
     pcall(vim.api.nvim_win_close, e.win, false)
   end
   table.remove(M._ext, i)
+  M.update_winbars()
   vim.schedule(function() pcall(vim.cmd, "redrawstatus") end)
 end
 

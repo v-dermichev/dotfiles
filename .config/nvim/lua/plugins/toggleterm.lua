@@ -50,8 +50,17 @@ return {
         -- Escape, pane nav, tab cycling, and gf / Ctrl-click file:line:col
         -- links — the same set the slot's debug/test panes get.
         require("config.term_tabs").apply_term_local_maps(0)
-        -- Terminal tab list winbar — gated behind term_tabs.tabbar.
-        require("config.term_tabs").apply_winbar(0)
+        -- Tab list winbar (auto: visible from the 2nd tab on). Refresh every
+        -- slot window — an existing lone shell gains its bar when this new
+        -- terminal pushes the count past one.
+        vim.schedule(function() require("config.term_tabs").update_winbars() end)
+      end,
+    })
+    -- Closing a terminal can drop the count back to one — bar disappears.
+    vim.api.nvim_create_autocmd("TermClose", {
+      pattern = "term://*toggleterm#*",
+      callback = function()
+        vim.schedule(function() require("config.term_tabs").update_winbars() end)
       end,
     })
   end,
