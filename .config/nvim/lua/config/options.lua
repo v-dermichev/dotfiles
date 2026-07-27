@@ -26,6 +26,11 @@ opt.cursorline = true      -- Highlight the line where the cursor is
 opt.signcolumn = "yes"     -- Always show the sign column (for git/lsp)
 opt.wrap = false           -- Don't wrap long lines
 
+-- Terminal mode gets the same vertical bar as insert mode; the rest of the
+-- modes keep Neovim's defaults.
+opt.guicursor =
+  "n-v-c-sm:block,i-ci-ve:ver25,r-cr-o:hor20,t:ver25-blinkon500-blinkoff500-TermCursor"
+
 -- Default border for floating windows (LSP hover/K, signature help,
 -- diagnostic floats). Matches blink.cmp's rounded documentation window.
 opt.winborder = "rounded"
