@@ -36,7 +36,16 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
 if vim.g.neovide then
     vim.g.neovide_window_width = 1200
     vim.g.neovide_window_height = 800
-    vim.g.neovide_opacity = 0.92 -- kept in step with Hyprland $activeOpacity
+    -- Shared with kitty via toggle-app-transparency.sh; 0.92 keeps step with
+    -- Hyprland $activeOpacity.
+    local state = io.open((os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state"))
+        .. "/app-transparency", "r")
+    local transparent = true
+    if state then
+        transparent = state:read("*l") ~= "off"
+        state:close()
+    end
+    vim.g.neovide_opacity = transparent and 0.92 or 1.0
     -- Uniform inset (same reasoning as kitty window_padding_width): the cell
     -- grid never divides the pixel size exactly, so separator lines stop a
     -- few varying pixels short of the edge; a deliberate margin hides that.
@@ -286,6 +295,21 @@ vim.api.nvim_create_autocmd("ColorScheme", {
   callback = apply_pycharm,
 })
 apply_pycharm()
+
+-- Neovide paints its own background, so only the terminal needs these cleared
+-- for kitty's background_opacity to show through.
+if not vim.g.neovide then
+  local function clear_backgrounds()
+    for _, group in ipairs({ "Normal", "NormalNC", "SignColumn", "FoldColumn" }) do
+      vim.cmd(("highlight %s guibg=NONE ctermbg=NONE"):format(group))
+    end
+  end
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = user_hl_group,
+    callback = clear_backgrounds,
+  })
+  clear_backgrounds()
+end
 
 -- No vim.lsp.enable() calls here: mason-lspconfig's automatic_enable turns on
 -- every mason-installed server; servers outside mason are enabled in
