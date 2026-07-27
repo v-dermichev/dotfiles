@@ -1,0 +1,94 @@
+configuration {
+    show-icons: true;
+    click-to-exit: true;
+    font: "JetBrainsMono Nerd Font 12";
+
+    /* Ctrl+j/k ship bound to kb-accept-entry and kb-remove-to-eol; rofi rejects
+       a duplicate binding outright, so those have to be freed in the same pass. */
+    kb-accept-entry: "Return,KP_Enter";
+    kb-remove-to-eol: "";
+    kb-row-down: "Down,Control+n,Control+j";
+    kb-row-up: "Up,Control+p,Control+k";
+}
+
+* {
+    bg: rgba(43, 48, 59, 0.93);
+    bg-alt: rgba(0, 0, 0, 0.3);
+    fg: #ffffff;
+    border-col: rgba(100, 114, 125, 0.9);
+    selected: rgba(100, 114, 125, 0.5);
+    hover: rgba(100, 114, 125, 0.3);
+
+    /* The default theme styles state-qualified selectors (element normal.normal
+       and friends) which outrank a bare `element` rule, so reaching them means
+       setting the built-in variables those states read. */
+    background: transparent;
+    foreground: @fg;
+    normal-background: transparent;
+    normal-foreground: @fg;
+    alternate-normal-background: transparent;
+    alternate-normal-foreground: @fg;
+    selected-normal-background: @selected;
+    selected-normal-foreground: @fg;
+}
+
+window {
+    width: 500px;
+    border: 2px;
+    border-color: @border-col;
+    border-radius: 10px;
+    background-color: @bg;
+}
+
+mainbox {
+    background-color: transparent;
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border-radius: 8px;
+    margin: 8px;
+    padding: 8px 12px;
+    spacing: 8px;
+    children: [entry];
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @fg;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @fg;
+    placeholder: "Search...";
+    placeholder-color: rgba(255, 255, 255, 0.4);
+}
+
+listview {
+    background-color: transparent;
+    margin: 0 8px 8px 8px;
+    lines: 10;
+    border: 0;
+}
+
+element {
+    padding: 6px 10px;
+    background-color: transparent;
+    text-color: @fg;
+    border-radius: 8px;
+}
+
+element selected {
+    background-color: @selected;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+}
+
+element-icon {
+    background-color: transparent;
+    size: 24px;
+}
