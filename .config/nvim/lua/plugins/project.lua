@@ -8,10 +8,11 @@ return {
     projects = { -- define project roots
       "~/projects/*",
       "~/repos/*",
-      "~/repos/*/*",
+      "~/repos/edu/*",
+      "~/repos/nvim/*",
+      "~/repos/frameworks/*",
       "~/repos/*/*/*",
       "~/.config/*",
-      "~/.config/*/*",
     },
     picker = {
       type = "telescope", -- one of "telescope", "fzf-lua", or "snacks"
