@@ -2,10 +2,7 @@
   "permissions": {
     "defaultMode": "default"
   },
-  "statusLine": {
-    "type": "command",
-    "command": "sh ~/.claude/statusline-command.sh"
-  },
+  "model": "opus[1m]",
   "hooks": {
     "PostToolUse": [
       {
@@ -20,8 +17,11 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "sh ~/.claude/statusline-command.sh"
+  },
   "effortLevel": "high",
   "editorMode": "vim",
-  "agentPushNotifEnabled": true,
-  "model": "claude-fable-5[1m]"
+  "agentPushNotifEnabled": true
 }
