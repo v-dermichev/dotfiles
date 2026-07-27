@@ -109,6 +109,7 @@ window#waybar.hidden {
 #custom-power,
 #custom-wallpaper-random,
 #custom-wallpaper-starred,
+#custom-wallpaper-unstarred,
 #custom-wallpaper-star,
 #custom-wallpaper-trash,
 #bluetooth,
@@ -128,6 +129,7 @@ window#waybar.hidden {
 #custom-power:hover,
 #custom-wallpaper-random:hover,
 #custom-wallpaper-starred:hover,
+#custom-wallpaper-unstarred:hover,
 #custom-wallpaper-star:hover,
 #custom-wallpaper-trash:hover,
 #bluetooth:hover,
@@ -138,8 +140,10 @@ window#waybar.hidden {
 
 /* Wallpaper controls */
 #custom-wallpaper-random,
+#custom-wallpaper-unstarred,
 #custom-wallpaper-starred { letter-spacing: 4px; }
 #custom-wallpaper-starred { color: #d4a84b; }
+#custom-wallpaper-unstarred { color: rgba(255, 255, 255, 0.55); }
 #custom-wallpaper-star.unstarred { color: rgba(255, 255, 255, 0.3); }
 #custom-wallpaper-star.starred { color: #d4a84b; }
 #custom-wallpaper-trash.disabled { color: rgba(255, 255, 255, 0.25); }

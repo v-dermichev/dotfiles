@@ -16,6 +16,7 @@
         "custom/wallpaper-trash",
         "custom/wallpaper-star",
         "custom/wallpaper-starred",
+        "custom/wallpaper-unstarred",
         "custom/notification-center",
         "custom/opacity",
         // "bluetooth",
@@ -207,6 +208,11 @@
         "format": "󰒟󰋩",
         "tooltip-format": "Random wallpaper",
         "on-click": "wproulette random; pkill -RTMIN+11 waybar"
+    },
+    "custom/wallpaper-unstarred": {
+        "format": "󰒟󰓏",
+        "tooltip-format": "Random, skipping starred",
+        "on-click": "wproulette unstarred; pkill -RTMIN+11 waybar"
     },
     "custom/wallpaper-starred": {
         "format": "󰒟󰓎",
