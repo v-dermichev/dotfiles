@@ -1,7 +1,6 @@
 -- Hyprland config for the Lua config manager (Hyprland >= 0.55). There is no
 -- hyprland.conf counterpart: the state files read back at load need Lua's file
 -- I/O, which the legacy format cannot express.
--- Hardware-specific values are the locals directly below.
 
 ---------------------------
 ---- VARIABLES ----
@@ -38,10 +37,8 @@ hl.env("HYPR_INTERNAL_MODE", internalMode)
 ---- PERSISTED STATE ----
 ---------------------------
 
--- Runtime toggles (Super+P, the Waybar transparency button) write their choice
--- into this directory, and every config load reads it back. That is what makes
--- the config agree with the last explicit choice, so `hyprctl reload` restates
--- it instead of reverting to a default that something else has to correct.
+-- Read back on every config load, so `hyprctl reload` restates the stored
+-- choice instead of reverting to the declared default.
 local stateDir = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/hypr"
 
 local function stateValue(name)
@@ -65,11 +62,8 @@ local function writeState(name, value)
   return true
 end
 
--- Global on purpose: the manager's Lua VM persists between evals, so a function
--- defined at config load stays callable for the rest of the session. That lets
--- the Waybar button drive this with a single `hyprctl eval 'toggleTransparency()'`
--- instead of shelling out to read the current opacity and then set it.
--- Accepts "on" / "off", or nothing to flip whatever is stored.
+-- Global on purpose: the manager's Lua VM persists between evals, so this stays
+-- callable from `hyprctl eval` for the rest of the session.
 function toggleTransparency(action)
   local target = action
   if target ~= "on" and target ~= "off" then
@@ -95,10 +89,8 @@ local function internalPreference()
   return nil
 end
 
--- Physical connection read straight from DRM. Hyprland's IPC cannot be queried
--- from inside the config: config code runs on the compositor thread, so an inner
--- `hyprctl` call waits on a reply that cannot be sent until it returns. sysfs is
--- the only monitor source available in this context.
+-- Config code runs on the compositor thread, so an inner `hyprctl` call waits on
+-- a reply that cannot be sent until it returns. sysfs is the only source here.
 local function drmConnected(output)
   local p = io.popen("cat /sys/class/drm/*-" .. output .. "/status 2>/dev/null")
   if not p then return false end
@@ -110,10 +102,8 @@ local function drmConnected(output)
   return false
 end
 
--- An explicit "enabled" keeps the panel on even alongside the external display.
--- Anything else -- "disabled", or no stored choice yet -- means the panel is off
--- exactly while the external is attached. Both paths leave it on when nothing
--- else is connected, so no branch here can leave the machine without output.
+-- Off only while the external is attached, so no branch can leave the machine
+-- without output.
 local function applyInternal()
   local disabled = internalPreference() ~= "enabled" and drmConnected(external)
   if disabled then
@@ -126,9 +116,8 @@ end
 applyInternal()
 hl.monitor({ output = external, mode = externalMode, position = "1920x0", scale = 1 })
 
--- swaync binds its notification layer to an output at startup; when the output
--- set changes it can be left rendering popups on a screen that is gone while the
--- center silently keeps collecting them. Restart it to rebind.
+-- swaync binds its notification layer to an output at startup and will keep
+-- rendering popups onto one that is gone. Restart it to rebind.
 local function rebindSwaync()
   hl.exec_cmd("pkill -x swaync; setsid -f swaync >/dev/null 2>&1")
 end
@@ -143,8 +132,6 @@ hl.on("monitor.removed", function()
   rebindSwaync()
 end)
 
--- Lid transitions route through the same script as Super+P so every state change
--- has one writer; `auto` follows whether the external display is attached.
 hl.bind("switch:on:Lid Switch",
   hl.dsp.exec_cmd("~/.config/hypr/scripts/toggle-internal-monitor.sh auto"),
   { locked = true })
@@ -179,8 +166,6 @@ hl.config({
     enabled = true,
   },
 
-  -- Fully opaque only when transparency has been switched off; any other value,
-  -- including no stored choice yet, uses the blended defaults above.
   decoration = {
     rounding         = 8,
     active_opacity   = stateValue("transparency") == "off" and 1.0 or activeOpacity,
@@ -213,9 +198,6 @@ hl.config({
 ---- WORKSPACES ----
 ---------------------------
 
--- 1-9 belong to the external display, 10-19 to the internal panel. The lowest of
--- each range is that monitor's default, so it is the one shown when the monitor
--- appears with no workspace of its own yet.
 local function assignWorkspaces(first, last, monitor)
   for i = first, last do
     local rule = { workspace = tostring(i), monitor = monitor }
@@ -329,8 +311,7 @@ for i = 1, 9 do
   hl.bind(mod .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }))
 end
 
--- ALT shifts the same number row onto the internal panel's 10-19 bank, with 0
--- standing in for 10 so the digits stay in their natural left-to-right order.
+-- 0 stands in for 10 so the digits keep their left-to-right order.
 for i = 0, 9 do
   local ws = (i == 0) and 10 or (10 + i)
   hl.bind(mod .. " + ALT + " .. i, hl.dsp.focus({ workspace = ws }))
@@ -407,16 +388,12 @@ hl.window_rule({
   workspace = "name:Steam",
 })
 
--- virt-manager connects to libvirt before mapping anything, so it is slow enough
--- that focus has usually moved on by the time its window appears.
 hl.window_rule({
   name      = "virt-manager",
   match     = { class = "^(virt-manager)$" },
   workspace = "name:Windows",
 })
 
--- Steam games (any steam_app_* window): fullscreen on workspace 8,
--- exempt from opacity blending and blur
 hl.window_rule({
   name       = "steam-games",
   match      = { class = [[^(steam_app_\d+)$]] },
@@ -426,10 +403,8 @@ hl.window_rule({
   no_blur    = true,
 })
 
--- Telegram: every toplevel (main window, detached chats, incoming-call popups)
--- belongs on the telegram scratchpad. `silent` places it there without pulling
--- the view along, so a call arriving mid-game cannot spawn a window over a
--- fullscreen client and knock it out of fullscreen.
+-- `on_created_empty` only launches the app; the window it maps lands on whichever
+-- workspace is focused at the time, so each class needs pinning here as well.
 hl.window_rule({
   name      = "telegram",
   match     = { class = [[^(org\.telegram\.desktop)$]] },
@@ -442,10 +417,6 @@ hl.window_rule({
   workspace = "special:discord silent",
 })
 
--- Remaining scratchpad apps. `on_created_empty` only launches the app; placement
--- of the window it eventually maps is decided by whichever workspace is focused
--- at map time. Pinning each class makes that deterministic, so toggling between
--- scratchpads while one is still starting cannot land its window on a neighbour.
 -- Chromium derives an --app window's class as chrome-<host>__-<profile-directory>.
 hl.window_rule({
   name      = "obsidian",
