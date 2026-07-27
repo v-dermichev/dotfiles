@@ -9,7 +9,9 @@ return {
       "~/projects/*",
       "~/repos/*",
       "~/repos/*/*",
+      "~/repos/*/*/*",
       "~/.config/*",
+      "~/.config/*/*",
     },
     picker = {
       type = "telescope", -- one of "telescope", "fzf-lua", or "snacks"
