@@ -23,6 +23,27 @@ return {
           },
           diagnostics = {
             globals = { 'vim' }, -- Recognize `vim` as a global
+            -- Require LuaCATS annotations. These are off ("None") by default;
+            -- "Any" enables them for every file in the workspace. A project
+            -- can opt out by setting them back to "None" in its .luarc.json,
+            -- which takes precedence over these client settings.
+            neededFileStatus = {
+              ["missing-global-doc"] = "Any",       -- undocumented global functions/variables
+              ["missing-local-export-doc"] = "Any", -- undocumented exported module functions
+              ["incomplete-signature-doc"] = "Any", -- partially annotated signatures
+              ["codestyle-check"] = "Any",          -- EmmyLuaCodeStyle formatting violations
+            },
+          },
+          format = {
+            -- Global style baseline (Neovim/stylua conventions). A workspace
+            -- .editorconfig takes precedence over defaultConfig, so projects
+            -- override per-file as needed. Values must be strings.
+            defaultConfig = {
+              indent_style = "space",
+              indent_size = "2",
+              continuation_indent = "2",
+              max_line_length = "100",
+            },
           },
           workspace = {
             library = vim.api.nvim_get_runtime_file("", true), -- Make LSP aware of Neovim runtime

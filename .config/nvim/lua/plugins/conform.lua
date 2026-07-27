@@ -38,7 +38,6 @@ return {
   opts = {
     formatters_by_ft = {
       python = { "ruff_fix", "ruff_format" },
-      lua = { "stylua" },
       json = prefer_biome({ "jq" }),
       javascript = prefer_biome({ "prettierd", "prettier", stop_after_first = true }),
       typescript = prefer_biome({ "prettierd", "prettier", stop_after_first = true }),
