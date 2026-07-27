@@ -292,6 +292,10 @@ hl.bind(mod .. " + SHIFT + left", hl.dsp.window.move({ direction = "l" }))
 hl.bind(mod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
 hl.bind(mod .. " + SHIFT + up", hl.dsp.window.move({ direction = "u" }))
 hl.bind(mod .. " + SHIFT + down", hl.dsp.window.move({ direction = "d" }))
+hl.bind(mod .. " + SHIFT + H", hl.dsp.window.move({ direction = "l" }))
+hl.bind(mod .. " + SHIFT + L", hl.dsp.window.move({ direction = "r" }))
+hl.bind(mod .. " + SHIFT + K", hl.dsp.window.move({ direction = "u" }))
+hl.bind(mod .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }))
 
 -- Floating & layout
 hl.bind(mod .. " + SHIFT + Z", hl.dsp.window.float({ action = "toggle" }))
