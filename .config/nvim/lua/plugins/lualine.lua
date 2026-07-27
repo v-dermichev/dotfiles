@@ -4,7 +4,7 @@ return {
   config = function()
     require("lualine").setup({
       options = {
-        theme = "auto",     -- "auto" will set the theme dynamically based on the colorscheme
+        theme = "auto", -- "auto" will set the theme dynamically based on the colorscheme
         -- One global bar at the very bottom (laststatus=3): individual panes
         -- (tree, DB drawer, terminal slot) never carry a statusline of their
         -- own, and horizontal pane boundaries are real WinSeparators with

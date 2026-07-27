@@ -29,7 +29,7 @@ function M.dangerous(sql)
   for stmt in (sql .. ";"):gmatch("([^;]+);") do
     local s = " " .. stmt:lower() .. " "
     if (s:find("%s+update%s") or s:find("^%s*update%s") or s:find("%s+delete%s") or s:find("^%s*delete%s"))
-        and not s:find("%s+where%s") then
+      and not s:find("%s+where%s") then
       local trimmed = vim.trim(stmt)
       if trimmed ~= "" then return trimmed end
     end
@@ -302,19 +302,20 @@ function M.row_menu()
               for i, c in ipairs(cols) do
                 if c == col then ci = i end
               end
-              vim.ui.input({ prompt = "SET `" .. col .. "` = ", default = picked[1][ci] }, function(newval)
-                if newval == nil then return end
-                local v = newval == "NULL" and "NULL" or (sql_value(newval) or "NULL")
-                local stmts = {}
-                for _, vals in ipairs(picked) do
-                  table.insert(stmts, ("UPDATE `%s` SET `%s` = %s WHERE %s%s;")
-                    :format(tbl, col, v, identity_where(cols, vals), limit))
-                end
-                local sql = table.concat(stmts, "\n")
-                if vim.fn.confirm(sql, "&Execute\n&Cancel", 1) == 1 then
-                  M.exec(url, sql)
-                end
-              end)
+              vim.ui.input({ prompt = "SET `" .. col .. "` = ", default = picked[1][ci] },
+                function(newval)
+                  if newval == nil then return end
+                  local v = newval == "NULL" and "NULL" or (sql_value(newval) or "NULL")
+                  local stmts = {}
+                  for _, vals in ipairs(picked) do
+                    table.insert(stmts, ("UPDATE `%s` SET `%s` = %s WHERE %s%s;")
+                      :format(tbl, col, v, identity_where(cols, vals), limit))
+                  end
+                  local sql = table.concat(stmts, "\n")
+                  if vim.fn.confirm(sql, "&Execute\n&Cancel", 1) == 1 then
+                    M.exec(url, sql)
+                  end
+                end)
             end,
           },
         })

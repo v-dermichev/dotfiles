@@ -17,7 +17,8 @@ return {
     -- trees, so the LazyUpdatePre/RestorePre hooks below restore pristine
     -- files first, and the post hooks re-apply the (idempotent) sed. The
     -- build step covers fresh installs.
-    build = [[sh -c "sed -i 's/^\s*redraw!$/  \" redraw! patched out: full-screen repaint blinks every pane/' autoload/db_ui/drawer.vim autoload/db_ui.vim"]],
+    build =
+    [[sh -c "sed -i 's/^\s*redraw!$/  \" redraw! patched out: full-screen repaint blinks every pane/' autoload/db_ui/drawer.vim autoload/db_ui.vim"]],
     dependencies = {
       { "tpope/vim-dadbod", lazy = true },
       {
@@ -145,8 +146,8 @@ return {
         -- the url already carries params.
         local host = url:match("^m[%w]+://[^@/]*@([^:/?]+)")
         if (host == "localhost" or host == "127.0.0.1")
-            and (url:match("^mariadb://") or url:match("^mysql://"))
-            and not url:find("?", 1, true) then
+          and (url:match("^mariadb://") or url:match("^mysql://"))
+          and not url:find("?", 1, true) then
           url = url .. "?ssl-verify-server-cert=off"
         end
         return url
@@ -275,13 +276,18 @@ return {
                     tbl = lab
                   end
                   cur_indent = ind
-                  if ind == 0 then conn = lab break end
+                  if ind == 0 then
+                    conn = lab
+                    break
+                  end
                 end
               end
               local url
               if conn then
                 local function try(name, u)
-                  if not url and vim.fn["db_ui#utils#slug"](name) == vim.fn["db_ui#utils#slug"](conn) then url = u end
+                  if not url and vim.fn["db_ui#utils#slug"](name) == vim.fn["db_ui#utils#slug"](conn) then
+                    url = u
+                  end
                 end
                 local dbs = vim.g.dbs or {}
                 if dbs[1] then
@@ -335,7 +341,7 @@ return {
               for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
                 local b = vim.api.nvim_win_get_buf(w)
                 if vim.api.nvim_win_get_config(w).relative == "" and vim.bo[b].buftype == ""
-                    and vim.bo[b].filetype ~= "dbui" then
+                  and vim.bo[b].filetype ~= "dbui" then
                   editor_win, editor_buf = w, b
                   break
                 end
@@ -351,7 +357,7 @@ return {
               -- Restore SAME-TICK: :DB captured the query text synchronously,
               -- and any repaint between swap-in and swap-back is the flicker.
               if editor_win and vim.api.nvim_win_is_valid(editor_win)
-                  and editor_buf and vim.api.nvim_buf_is_valid(editor_buf) then
+                and editor_buf and vim.api.nvim_buf_is_valid(editor_buf) then
                 pcall(vim.api.nvim_win_set_buf, editor_win, editor_buf)
               elseif not editor_win and vim.api.nvim_win_is_valid(qwin) then
                 pcall(vim.api.nvim_win_close, qwin, false)
@@ -407,8 +413,8 @@ return {
               local sql = get_sql()
               local danger = dbtools.dangerous(sql)
               if danger and vim.fn.confirm(
-                    "Statement without WHERE:\n\n" .. danger .. "\n\nExecute anyway?",
-                    "&Execute\n&Cancel", 2, "Warning") ~= 1 then
+                  "Statement without WHERE:\n\n" .. danger .. "\n\nExecute anyway?",
+                  "&Execute\n&Cancel", 2, "Warning") ~= 1 then
                 vim.notify("DB: cancelled", vim.log.levels.INFO)
                 return
               end
@@ -441,8 +447,8 @@ return {
               local sql = table.concat(vim.api.nvim_buf_get_lines(ev.buf, 0, -1, false), "\n")
               local danger = dbtools.dangerous(sql)
               if danger and vim.fn.confirm(
-                    "Statement without WHERE:\n\n" .. danger .. "\n\nExecute anyway?",
-                    "&Execute\n&Cancel", 2, "Warning") ~= 1 then
+                  "Statement without WHERE:\n\n" .. danger .. "\n\nExecute anyway?",
+                  "&Execute\n&Cancel", 2, "Warning") ~= 1 then
                 error("DB: write/execute cancelled")
               end
               local key = vim.b[ev.buf].dbui_db_key_name
@@ -481,7 +487,7 @@ return {
               local win
               for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
                 if vim.api.nvim_win_get_buf(w) == ev.buf
-                    and vim.api.nvim_win_get_config(w).relative == "" then
+                  and vim.api.nvim_win_get_config(w).relative == "" then
                   win = w
                   break
                 end

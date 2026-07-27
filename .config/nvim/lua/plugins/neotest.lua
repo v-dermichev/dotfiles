@@ -13,17 +13,21 @@ return {
     "Nsidorenco/neotest-vstest",
   },
   keys = {
-    { "<leader>tr", function() require("neotest").run.run() end,                       desc = "Test: run nearest (under cursor)" },
-    { "<leader>tf", function() require("neotest").run.run(vim.fn.expand("%")) end,      desc = "Test: run file" },
-    { "<leader>ta", function() require("neotest").run.run(vim.fn.getcwd()) end,         desc = "Test: run all" },
-    { "<leader>td", function() require("neotest").run.run({ strategy = "dap" }) end,    desc = "Test: debug nearest (clreval)" },
+    { "<leader>tr", function() require("neotest").run.run() end,                     desc = "Test: run nearest (under cursor)" },
+    { "<leader>tf", function() require("neotest").run.run(vim.fn.expand("%")) end,   desc = "Test: run file" },
+    { "<leader>ta", function() require("neotest").run.run(vim.fn.getcwd()) end,      desc = "Test: run all" },
+    { "<leader>td", function() require("neotest").run.run({ strategy = "dap" }) end, desc = "Test: debug nearest (clreval)" },
     -- Same debug-nearest, but forces the OLD debugger (netcoredbg) for this one
     -- run via a one-shot override the strategy wrapper below consumes — for
     -- comparing clreval against netcoredbg on the identical test/breakpoint.
-    { "<leader><leader>td", function()
+    {
+      "<leader><leader>td",
+      function()
         vim.g.neotest_vstest_debug_backend = { type = "coreclr", request = "attach" }
         require("neotest").run.run({ strategy = "dap" })
-      end, desc = "Test: debug nearest (netcoredbg — comparison)" },
+      end,
+      desc = "Test: debug nearest (netcoredbg — comparison)"
+    },
     { "<leader>tl", function() require("neotest").run.run_last() end,                   desc = "Test: run last" },
     { "<leader>tx", function() require("neotest").run.stop() end,                       desc = "Test: stop" },
     { "<leader>ts", function() require("neotest").summary.toggle() end,                 desc = "Test: summary panel" },

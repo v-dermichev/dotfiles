@@ -27,17 +27,17 @@ return {
     open_files_do_not_replace_types = { "terminal", "trouble", "qf", "dbui", "dbout" },
     window = {
       position = "left",
-      width = 32, -- fixed slice of the left side
+      width = 32,                                      -- fixed slice of the left side
       mappings = {
-        ["q"] = { "quick_open", nowait = true }, -- launch default xdg app, floating
+        ["q"] = { "quick_open", nowait = true },       -- launch default xdg app, floating
         ["Q"] = { "quick_open_tiled", nowait = true }, -- launch default xdg app, tiled
-        ["l"] = "open", -- unfold dir / open file in editor
-        ["h"] = "close_node", -- fold dir
-        ["o"] = { "open_with", nowait = true }, -- xdg "open with" menu; launches floating
-        ["O"] = { "open_with_tiled", nowait = true }, -- same menu; launches tiled
-        ["."] = "set_root", -- re-root the tree at the hovered directory
-        ["<bs>"] = "navigate_up", -- re-root one level up (undo set_root / go back)
-        ["w"] = { "change_dir", nowait = true }, -- :cd Neovim to the hovered directory
+        ["l"] = "open",                                -- unfold dir / open file in editor
+        ["h"] = "close_node",                          -- fold dir
+        ["o"] = { "open_with", nowait = true },        -- xdg "open with" menu; launches floating
+        ["O"] = { "open_with_tiled", nowait = true },  -- same menu; launches tiled
+        ["."] = "set_root",                            -- re-root the tree at the hovered directory
+        ["<bs>"] = "navigate_up",                      -- re-root one level up (undo set_root / go back)
+        ["w"] = { "change_dir", nowait = true },       -- :cd Neovim to the hovered directory
       },
     },
     commands = {

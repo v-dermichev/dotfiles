@@ -11,11 +11,13 @@ return {
     "mfussenegger/nvim-dap-python",
   },
   keys = {
-    { "<leader>db",  function() require("dap").toggle_breakpoint() end,                            desc = "DAP: toggle breakpoint" },
-    { "<leader>dB",  function() require("dap").set_breakpoint(vim.fn.input("Condition: ")) end,     desc = "DAP: conditional breakpoint" },
-    { "<leader>dh",  function() require("dap").set_breakpoint(nil, vim.fn.input("Hit count: "), nil) end, desc = "DAP: hit-count breakpoint" },
-    { "<leader>dX",  function() require("dap").clear_breakpoints() end,                             desc = "DAP: clear all breakpoints" },
-    { "<leader>dx",  function()
+    { "<leader>db", function() require("dap").toggle_breakpoint() end,                                   desc = "DAP: toggle breakpoint" },
+    { "<leader>dB", function() require("dap").set_breakpoint(vim.fn.input("Condition: ")) end,           desc = "DAP: conditional breakpoint" },
+    { "<leader>dh", function() require("dap").set_breakpoint(nil, vim.fn.input("Hit count: "), nil) end, desc = "DAP: hit-count breakpoint" },
+    { "<leader>dX", function() require("dap").clear_breakpoints() end,                                   desc = "DAP: clear all breakpoints" },
+    {
+      "<leader>dx",
+      function()
         -- Break on exceptions, picking from the adapter's advertised filters
         -- (clreval offers "all" / "user-unhandled"; exceptionInfo fills the stop).
         local dap = require("dap")
@@ -29,11 +31,15 @@ return {
         else
           dap.set_exception_breakpoints({ "user-unhandled" })
         end
-      end, desc = "DAP: break on exceptions (pick filter)" },
-    { "<leader>dc",  function() require("dap").continue() end,                                      desc = "DAP: continue" },
-    { "<leader>dP",  function() require("dap").pause() end,                                         desc = "DAP: pause running program" },
-    { "<F5>",        function() require("dap").continue() end,                                      desc = "DAP: continue" },
-    { "<leader>dd",  function()
+      end,
+      desc = "DAP: break on exceptions (pick filter)"
+    },
+    { "<leader>dc", function() require("dap").continue() end, desc = "DAP: continue" },
+    { "<leader>dP", function() require("dap").pause() end,    desc = "DAP: pause running program" },
+    { "<F5>",       function() require("dap").continue() end, desc = "DAP: continue" },
+    {
+      "<leader>dd",
+      function()
         local file = vim.fn.expand("%:p")
         vim.cmd("w") -- save current file
         if vim.bo.filetype ~= "python" then
@@ -66,34 +72,44 @@ return {
         }
         if runnable_module then config.module = module else config.program = file end
         require("dap").run(config)
-      end, desc = "DAP: debug current file" },
-    { "<leader>di",  function() require("dap").step_into() end,                                     desc = "DAP: step into" },
-    { "<F11>",       function() require("dap").step_into() end,                                     desc = "DAP: step into" },
-    { "<leader>do",  function() require("dap").step_over() end,                                     desc = "DAP: step over" },
-    { "<F10>",       function() require("dap").step_over() end,                                     desc = "DAP: step over" },
-    { "<leader>dO",  function() require("dap").step_out() end,                                      desc = "DAP: step out" },
-    { "<leader>dR",  function() require("dap").run_to_cursor() end,                                 desc = "DAP: run to cursor" },
-    { "<leader>dk",  function() require("dap").up() end,                                            desc = "DAP: stack frame up (caller)" },
-    { "<leader>dj",  function() require("dap").down() end,                                          desc = "DAP: stack frame down (callee)" },
-    { "<leader>dr",  function() require("dap").repl.toggle() end,                                   desc = "DAP: toggle REPL" },
-    { "<leader>dl",  function() require("dap").run_last() end,                                      desc = "DAP: run last" },
-    { "<leader>dt",  function() require("dap").terminate() end,                                     desc = "DAP: terminate (kill debuggee)" },
-    { "<leader>dD",  function() require("dap").disconnect({ terminateDebuggee = false }) end,       desc = "DAP: detach (leave debuggee running)" },
-    { "<leader>du",  function() require("config.term_tabs").show_ext("dap_scopes") end,              desc = "DAP: scopes pane" },
-    { "<leader>de",  function() require("dapui").eval() end, mode = { "n", "v" },                   desc = "DAP: eval (under cursor)" },
-    { "<leader>dE",  function()
+      end,
+      desc = "DAP: debug current file"
+    },
+    { "<leader>di", function() require("dap").step_into() end,                               desc = "DAP: step into" },
+    { "<F11>",      function() require("dap").step_into() end,                               desc = "DAP: step into" },
+    { "<leader>do", function() require("dap").step_over() end,                               desc = "DAP: step over" },
+    { "<F10>",      function() require("dap").step_over() end,                               desc = "DAP: step over" },
+    { "<leader>dO", function() require("dap").step_out() end,                                desc = "DAP: step out" },
+    { "<leader>dR", function() require("dap").run_to_cursor() end,                           desc = "DAP: run to cursor" },
+    { "<leader>dk", function() require("dap").up() end,                                      desc = "DAP: stack frame up (caller)" },
+    { "<leader>dj", function() require("dap").down() end,                                    desc = "DAP: stack frame down (callee)" },
+    { "<leader>dr", function() require("dap").repl.toggle() end,                             desc = "DAP: toggle REPL" },
+    { "<leader>dl", function() require("dap").run_last() end,                                desc = "DAP: run last" },
+    { "<leader>dt", function() require("dap").terminate() end,                               desc = "DAP: terminate (kill debuggee)" },
+    { "<leader>dD", function() require("dap").disconnect({ terminateDebuggee = false }) end, desc = "DAP: detach (leave debuggee running)" },
+    { "<leader>du", function() require("config.term_tabs").show_ext("dap_scopes") end,       desc = "DAP: scopes pane" },
+    { "<leader>de", function() require("dapui").eval() end,                                  mode = { "n", "v" },                          desc = "DAP: eval (under cursor)" },
+    {
+      "<leader>dE",
+      function()
         require("config.term_tabs").show_ext("dap_eval")
         require("config.dap_eval").focus_insert()
-      end, desc = "DAP: evaluate expression pane" },
-    { "<leader>dw",  function()
+      end,
+      desc = "DAP: evaluate expression pane"
+    },
+    {
+      "<leader>dw",
+      function()
         local expr = vim.fn.input("Watch: ")
         if expr ~= "" then
           require("dapui").elements.watches.add(expr)
           require("config.term_tabs").show_ext("dap_watches")
         end
-      end, desc = "DAP: add watch expression" },
-    { "<leader>dpt", function() require("dap-python").test_method() end,                            desc = "DAP-Python: test method" },
-    { "<leader>dpc", function() require("dap-python").test_class() end,                             desc = "DAP-Python: test class" },
+      end,
+      desc = "DAP: add watch expression"
+    },
+    { "<leader>dpt", function() require("dap-python").test_method() end, desc = "DAP-Python: test method" },
+    { "<leader>dpc", function() require("dap-python").test_class() end,  desc = "DAP-Python: test class" },
   },
   config = function()
     local dap = require("dap")
@@ -167,7 +183,8 @@ return {
         { upward = true, path = from, type = "file", limit = 1 })[1]
       local proj_dir = csproj and vim.fs.dirname(csproj) or vim.fn.getcwd()
       local name = csproj and vim.fn.fnamemodify(csproj, ":t:r")
-      local hits = vim.fn.glob(proj_dir .. "/bin/**/" .. (name and name .. ".dll" or "*.dll"), false, true)
+      local hits = vim.fn.glob(proj_dir .. "/bin/**/" .. (name and name .. ".dll" or "*.dll"), false,
+        true)
       table.sort(hits, function(a, b) return vim.fn.getftime(a) > vim.fn.getftime(b) end)
       if hits[1] then return hits[1] end
       return vim.fn.input("Path to dll: ", proj_dir .. "/bin/Debug/", "file")
@@ -270,14 +287,15 @@ return {
 
     dap.listeners.after.event_initialized.dbg_panes = function() vim.schedule(register_dbg_panes) end
     dap.listeners.before.event_terminated.dbg_panes = function() vim.schedule(clear_dbg_panes) end
-    dap.listeners.before.event_exited.dbg_panes = function() vim.schedule(clear_dbg_panes) end
+    dap.listeners.before.event_exited.dbg_panes     = function() vim.schedule(clear_dbg_panes) end
 
     -- Floating control widget (top-right): clickable continue/pause/step/
     -- terminate buttons with hover hints, shown for the life of the session.
-    local ctrl = function(fn) return function() vim.schedule(function() require("config.dap_controls")[fn]() end) end end
-    dap.listeners.after.event_initialized.controls = ctrl("open")
-    dap.listeners.before.event_terminated.controls = ctrl("close")
-    dap.listeners.before.event_exited.controls     = ctrl("close")
+    local ctrl                                      = function(fn) return function() vim.schedule(function()
+          require("config.dap_controls")[fn]() end) end end
+    dap.listeners.after.event_initialized.controls  = ctrl("open")
+    dap.listeners.before.event_terminated.controls  = ctrl("close")
+    dap.listeners.before.event_exited.controls      = ctrl("close")
 
     -- nvim-dap deliberately skips the jump-to-source on a `pause` stop
     -- (session.event_stopped: should_jump = reason ~= 'pause'). Do it ourselves
@@ -310,7 +328,9 @@ return {
     end
 
     vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError", numhl = "" })
-    vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn", numhl = "" })
-    vim.fn.sign_define("DapStopped", { text = "▶", texthl = "DiagnosticWarn", linehl = "Visual", numhl = "" })
+    vim.fn.sign_define("DapBreakpointCondition",
+      { text = "◆", texthl = "DiagnosticWarn", numhl = "" })
+    vim.fn.sign_define("DapStopped",
+      { text = "▶", texthl = "DiagnosticWarn", linehl = "Visual", numhl = "" })
   end,
 }
