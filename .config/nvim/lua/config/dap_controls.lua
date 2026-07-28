@@ -151,7 +151,7 @@ function M.open()
   vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, { line })
   local ns = vim.api.nvim_create_namespace("dap_controls")
   for _, h in ipairs(hls) do
-    vim.api.nvim_buf_add_highlight(state.buf, ns, h.group, 0, h.s, h.e)
+    vim.api.nvim_buf_set_extmark(state.buf, ns, 0, h.s, { end_col = h.e, hl_group = h.group })
   end
   vim.bo[state.buf].modifiable = false
   vim.bo[state.buf].bufhidden = "wipe"
