@@ -431,5 +431,5 @@ export NVM_DIR="$HOME/.nvm"
 # source "/home/work/.openclaw/completions/openclaw.zsh"
 export LC_TIME="C.UTF-8"
 
-aflmac() { AUTOSSH_GATETIME=0 autossh -M 0 -t afl '/opt/homebrew/bin/tmux new -A -s vdermichev'; }
-aflwin() { AUTOSSH_GATETIME=0 autossh -M 0 -t aflwin 'tmux new -A -s vdermichev'; }
+mac() { AUTOSSH_GATETIME=0 autossh -M 0 -t mac '/opt/homebrew/bin/tmux new -A -s vdermichev'; }
+win() { AUTOSSH_GATETIME=0 autossh -M 0 -t win 'tmux new -A -s vdermichev'; }
