@@ -1,0 +1,22 @@
+#!/bin/sh
+# Subnautica 2 Proton launch wrapper.
+# Forces VKD3D extension blocks + a few sane env vars, then exec's the
+# real %command% Steam passes in.
+
+export VKD3D_DISABLE_EXTENSIONS="VK_EXT_mesh_shader,VK_NV_raw_access_chains"
+export PROTON_NO_FSYNC=1
+export DXVK_LOG_LEVEL=warn
+export VKD3D_DEBUG=warn
+export PROTON_LOG=1
+
+ulimit -n "$(ulimit -Hn)" 2>/dev/null || true
+
+{
+    echo "=== sn2-launch fired at $(date -Iseconds) ==="
+    echo "VKD3D_DISABLE_EXTENSIONS=$VKD3D_DISABLE_EXTENSIONS"
+    echo "PROTON_NO_FSYNC=$PROTON_NO_FSYNC"
+    echo "argv:"
+    printf '  %s\n' "$@"
+} >>/tmp/sn2-launch.log 2>&1
+
+exec "$@"

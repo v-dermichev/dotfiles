@@ -1,0 +1,106 @@
+root = true
+
+[*]
+indent_style = space
+
+[Jenkinsfile]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{sh,bat,ps1}]
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cshtml]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+
+[*.{fs,fsx,yml}]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+
+[*.{md,markdown,json,js,csproj,fsproj,targets,targets,props,lua}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+
+[*.cs]
+
+indent_size = 4
+
+#######################################
+# Using directive ordering
+#######################################
+
+# Organize usings
+dotnet_sort_system_directives_first = true
+file_header_template = unset
+
+# Warn if using directives are out of order
+dotnet_diagnostic.IDE0005.severity = warning # Remove unnecessary usings
+dotnet_diagnostic.IDE0001.severity = warning # Name resolution issues
+dotnet_diagnostic.IDE0065.severity = warning # Misplaced usings
+dotnet_diagnostic.IDE0005.severity = warning # Unnecessary usings
+dotnet_diagnostic.IDE0002.severity = warning # Simplify name
+dotnet_diagnostic.IDE0003.severity = warning # Remove qualification
+
+# Enforce separate groups (System / third-party / project-local)
+dotnet_separate_import_directive_groups = true
+
+# Extra: this tells Roslyn to warn when ordering isn't followed
+dotnet_diagnostic.IDE0005.severity = warning
+dotnet_diagnostic.IDE0001.severity = warning
+dotnet_diagnostic.IDE0002.severity = warning
+dotnet_diagnostic.IDE0003.severity = warning
+dotnet_diagnostic.IDE0065.severity = warning
+
+
+trim_trailing_whitespace = true
+insert_final_newline = true
+end_of_line = lf
+#######################################
+# Naming conventions
+#######################################
+
+# Names must be PascalCase for public members
+dotnet_naming_rule.public_members_should_be_pascal_case.severity = warning
+dotnet_naming_rule.public_members_should_be_pascal_case.symbols = public_symbols
+dotnet_naming_rule.public_members_should_be_pascal_case.style = pascal_case_style
+
+dotnet_naming_symbols.public_symbols.applicable_kinds = property, method, field, event
+dotnet_naming_symbols.public_symbols.applicable_accessibilities = public, internal, protected
+dotnet_naming_symbols.public_symbols.required_modifiers =
+
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+# Private fields must be camelCase with underscore
+dotnet_naming_rule.private_fields_should_be_camel_case.severity = warning
+dotnet_naming_rule.private_fields_should_be_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_camel_case.style = camel_case_underscore_style
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+
+dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
+dotnet_naming_style.camel_case_underscore_style.required_prefix = _
+
+#######################################
+# Local variables lowercase
+#######################################
+
+dotnet_naming_rule.locals_camel.severity = suggestion
+dotnet_naming_rule.locals_camel.symbols = locals
+dotnet_naming_rule.locals_camel.style = camel_case_style
+
+# Target: local variables only
+dotnet_naming_symbols.local_variables.applicable_kinds = local
+dotnet_naming_symbols.local_variables.applicable_accessibilities = *
+dotnet_naming_symbols.local_variables.required_modifiers = 
+

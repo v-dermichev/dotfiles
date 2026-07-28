@@ -1,0 +1,22 @@
+[user]
+	email = v.dermichev@gmail.com
+	name = vdermichev
+[credential "https://github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[filter "lfs"]
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+[credential "https://gitlab.freedesktop.org"]
+	helper = /usr/bin/glab auth git-credential
+[credential "https://git.tquality.ru"]
+	helper = /usr/bin/glab auth git-credential
+[core]
+	excludesfile = /home/work/.gitignore_global
+[merge]
+	tool = nvimdiff2
